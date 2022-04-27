@@ -13,17 +13,26 @@ import java.awt.Image
 import java.awt.Polygon
 import java.awt.image.BufferedImage
 
-
+/**
+ * Our View that gets Attached to the Scene.
+ * Is also an observer
+ *
+ * @param mController the controller with the handlers for the elements
+ */
 class GISView(private val mController: GISController) : IDataObserver, BorderPane() {
-
+    /**
+     * The image to render on the canvas
+     */
     private lateinit var mImage: BufferedImage
-
-    private val mScene by lazy { scene }
 
     init {
         start()
     }
 
+    /**
+     * initializes all the UI elements and attaches them
+     * to the View.
+     */
     private fun start() {
         top = MenuBar()
 
@@ -50,23 +59,21 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
         onMouseReleased = mController.getMouseHandler()
     }
 
-
-//    fun repaint() {
-//        val x: DoubleArray = Arrays.stream(mPolygon.xpoints).asDoubleStream().toArray()
-//        val y: DoubleArray = Arrays.stream(mPolygon.ypoints).asDoubleStream().toArray()
-//        val c = mScene.lookup("#" + GISApplication.CANVAS_ID) as Canvas
-//        val gc = c.graphicsContext2D
-//        gc.strokePolygon(x, y, mPolygon.npoints)
-//    }
-
+    /**
+     * renders the image on the canvas
+     */
     fun repaint() {
         val writable = SwingFXUtils.toFXImage(mImage, null)
-        val c = mScene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+        val c = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
         val gc = c.graphicsContext2D
         gc.clearRect(0.0, 0.0, c.width, c.height)
         gc.drawImage(writable, 0.0, 0.0)
     }
 
+    /**
+     * updates the image on repaints the canvas
+     * when it receives an update from the Subject
+     */
     override fun update(_img: Image) {
         mImage = _img as BufferedImage
         repaint()
