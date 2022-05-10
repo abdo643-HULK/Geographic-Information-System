@@ -1,10 +1,12 @@
 package at.shehata.ex2.utils
 
+import at.shehata.ex2.gis.extensions.plus
 import java.awt.Point
 import java.awt.Polygon
 import java.awt.Rectangle
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.min
 
 
 internal const val MATRIX_SIZE = 9
@@ -15,6 +17,23 @@ internal const val FIRST_ROW_INDEX = 0
 internal const val SECOND_ROW_INDEX = 3
 internal const val THIRD_ROW_INDEX = 6
 
+fun testZTF() {
+    val world = Rectangle(47944531, 608091485, 234500, 213463)
+    val win = Rectangle(0, 0, 640, 480)
+    val transformed = Matrix.zoomToFit(world, win)
+
+    val projected = transformed * world
+    val resultProjected = Rectangle(56, 0, 527, 480)
+    println(resultProjected + " - " + projected.contains(resultProjected))
+
+    val invProjected = transformed.inverse() * projected
+    val resultInv = Rectangle(47944376, 608091929, 234364, 213018)
+    println(invProjected + " - " + invProjected.contains(resultInv))
+
+    val pointZoomed = Matrix.zoomPoint(transformed, Point(70, 20), 1.1)
+    println(pointZoomed)
+}
+
 data class Matrix(private val mMatrix: DoubleArray) {
     init {
         when {
@@ -22,6 +41,8 @@ data class Matrix(private val mMatrix: DoubleArray) {
             mMatrix.size > MATRIX_SIZE -> throw Exception("Matrix too big")
         }
     }
+
+    constructor() : this(DoubleArray(9) { 0.0 })
 
     companion object {
         fun translate(_pt: Point): Matrix = translate(_pt.x.toDouble(), _pt.y.toDouble())
@@ -82,7 +103,7 @@ data class Matrix(private val mMatrix: DoubleArray) {
          * @see java.awt.Rectangle
          */
         fun getZoomFactorX(_world: Rectangle, _win: Rectangle) =
-            _world.bounds.width.toDouble() / _win.bounds.width.toDouble()
+            _win.bounds.width.toDouble() / _world.bounds.width.toDouble()
 
         /**
          * Liefert den Faktor, der benötigt wird, um das _world-
@@ -95,7 +116,7 @@ data class Matrix(private val mMatrix: DoubleArray) {
          * @see java.awt.Rectangle
          */
         fun getZoomFactorY(_world: Rectangle, _win: Rectangle) =
-            _world.bounds.height.toDouble() / _win.bounds.height.toDouble()
+            _win.bounds.height.toDouble() / _world.bounds.height.toDouble()
 
         /**
          * Liefert eine Matrix, die alle notwendigen Transformationen
@@ -109,17 +130,12 @@ data class Matrix(private val mMatrix: DoubleArray) {
          * @see java.awt.Rectangle
          */
         fun zoomToFit(_world: Rectangle, _win: Rectangle): Matrix {
-            // TODO
-            val worldBB = _world.bounds
-            val winBB = _win.bounds
+            val originMatrix = translate(-_world.centerX, -_world.centerY)
+            val scaleMatrix = scale(min(getZoomFactorX(_world, _win), getZoomFactorY(_world, _win)))
+            val mirrorMatrix = mirrorX()
+            val centreMatrix = translate(_win.centerX, _win.centerY)
 
-            return Matrix(
-                doubleArrayOf(
-                    -1.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0,
-                    0.0, 0.0, 1.0
-                )
-            )
+            return centreMatrix * mirrorMatrix * scaleMatrix * originMatrix
         }
 
         /**
@@ -135,15 +151,12 @@ data class Matrix(private val mMatrix: DoubleArray) {
          * @return Die neue Transformationsmatrix
          * @see java.awt.Point
          */
-        fun zoomPoint(_old: Matrix?, _zoomPt: Point?, _zoomScale: Double): Matrix {
-            // TODO
-            return Matrix(
-                doubleArrayOf(
-                    -1.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0,
-                    0.0, 0.0, 1.0
-                )
-            )
+        fun zoomPoint(_old: Matrix, _zoomPt: Point, _zoomScale: Double): Matrix {
+            val originMatrix = translate(-_zoomPt.x.toDouble(), -_zoomPt.y.toDouble())
+            val scaleMatrix = scale(_zoomScale)
+            val centreMatrix = translate(_zoomPt.x.toDouble(), _zoomPt.y.toDouble())
+
+            return centreMatrix * scaleMatrix * originMatrix * _old
         }
     }
 
@@ -161,7 +174,7 @@ data class Matrix(private val mMatrix: DoubleArray) {
 
             acc + mMatrix[FIRST_ROW_INDEX + i] * determinantOf2x2
         }
-        println("determinant = $determinant")
+//        println("determinant = $determinant")
 
         val inverseMatrix = DoubleArray(MATRIX_SIZE)
         for (i in 0 until MATRIX_ROWS) {

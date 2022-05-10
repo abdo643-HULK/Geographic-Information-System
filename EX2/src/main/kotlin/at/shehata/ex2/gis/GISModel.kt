@@ -1,22 +1,25 @@
 package at.shehata.ex2.gis
 
 import at.shehata.ex2.interfaces.IDataObserver
-import de.intergis.JavaClient.JavaClientApplication
-import de.intergis.JavaClient.gui.IgcDummyTreeObject
+import at.shehata.ex2.utils.GeoObject
+import at.shehata.ex2.utils.Matrix
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.*
 import java.awt.image.BufferedImage
+import java.io.File
 import java.util.*
 
 /**
  * Contains the core logic that the controller calls
  */
-class GISModel {
+open class GISModel {
+    private var mWorldMatrix = Matrix()
+
     /**
      * List of all Polygons to render
      */
-    private val mData = mutableListOf<Polygon>()
+    private val mData = mutableListOf<GeoObject>()
 
     /**
      * width and height of the image
@@ -34,56 +37,27 @@ class GISModel {
      */
     private lateinit var mObserver: IDataObserver
 
-    /**
-     * Generates a house at a random position inside the canvas
-     */
-    fun generateRndHome() {
-        val deltaX = (0..mWidth - 40).random()
-        val deltaY = (0..mHeight - 50).random()
-        val x = intArrayOf(10, 40, 40, 25, 10, 10).map { deltaX + it }.toIntArray()
-        val y = intArrayOf(10, 10, 30, 50, 30, 10).map { deltaY + it }.toIntArray()
-        mData.add(Polygon(x, y, x.size))
-        repaint()
-    }
-
-    /**
-     * Generates a house at the supplied position inside the canvas
-     *
-     * @param _x the x coordinate
-     * @param _y the x coordinate
-     */
-    fun generateHome(_x: Int, _y: Int) {
-        val startX = _x - 10
-        val startY = _y - 10
-        val x = intArrayOf(startX + 10, startX + 40, startX + 40, startX + 25, startX + 10, startX + 10)
-        val y = intArrayOf(startY + 10, startY + 10, startY + 30, startY + 50, startY + 30, startY + 10)
-        mData.add(Polygon(x, y, x.size))
-        repaint()
-    }
-
-    fun drawBigHouse() {
-        val poly = Polygon().apply {
-            addPoint(10000, 10000)
-            addPoint(70000, 10000)
-            addPoint(70000, 70000)
-            addPoint(40000, 90000)
-            addPoint(10000, 70000)
-            addPoint(10000, 10000)
-        }
-
-        mData.add(poly)
-        repaint()
-    }
-
-    fun loadData() {
-        val objects = DummyGIS().let {
+    suspend fun loadData() = withContext(Dispatchers.Default) {
+        val geoObjects = DummyGIS().let {
             if (it.init()) {
-                it.extractData("select * from data where type = 1101")
+//                it.extractData("select * from data where type = 1101")
+                it.extractData("SELECT * FROM data WHERE type in (233, 931, 932, 933, 934, 1101)")
             } else {
                 null
-//                throw Error("Unable to connect to Server")
             }
         }
+
+//        geoObjects?.let { polygon ->
+//            val stringArray = polygon.joinToString(",\n") { "{ \"npoints\": ${it.npoints}, \"xpoints\": ${it.xpoints.contentToString()}, \"ypoints\": ${it.ypoints.contentToString()} }" }
+//            File("./data.json").writeText("{\n \"data\": [$stringArray] \n}");
+//        }
+        geoObjects?.let { mData.addAll(it.toTypedArray()) }
+    }
+
+
+    suspend fun drawData() {
+        loadData()
+        repaint()
     }
 
     /**
@@ -97,7 +71,7 @@ class GISModel {
      */
     fun repaint() {
         mImage.graphics.color = Color.BLUE
-        mData.forEach { mImage.graphics.fillPolygon(it) }
+        mData.forEach { mImage.graphics.drawPolygon(mWorldMatrix * it.getPoly()) }
         update(mImage)
     }
 
@@ -109,8 +83,9 @@ class GISModel {
      */
     fun setWidth(_width: Int) {
         mWidth = _width
-        mImage = initCanvas()
-        repaint()
+//        mImage = initCanvas()
+//        repaint()
+        zoomToFit()
     }
 
     /**
@@ -121,8 +96,9 @@ class GISModel {
      */
     fun setHeight(_height: Int) {
         mHeight = _height
-        mImage = initCanvas()
-        repaint()
+//        mImage = initCanvas()
+//        repaint()
+        zoomToFit()
     }
 
     /**
@@ -130,7 +106,7 @@ class GISModel {
      *
      * @param _house the updated image
      */
-    protected fun update(_house: Image) {
+    protected open fun update(_house: Image) {
         mObserver.update(_house)
     }
 
@@ -146,22 +122,18 @@ class GISModel {
      * skaliert, verschiebt und spiegelt, dass die zu zeichnenden Polygone
      * komplett in den Anzeigebereich passen
      */
-    fun zoomToFit() {}
+    fun zoomToFit() {
+        mImage = initCanvas()
+        mWorldMatrix =
+            Matrix.zoomToFit(
+                getMapBounds(mData.map { it.getPoly() }),
+                Rectangle(0, 0, mWidth, mHeight - 5)
+            )
+        repaint()
+    }
 
     suspend fun zoomToFitNonBlock() = withContext(Dispatchers.Default) {
         zoomToFit()
-    }
-
-    /**
-     * Veraendert die interne Transformationsmatrix so, dass in das
-     * Zentrum des Anzeigebereiches herein- bzw. herausgezoomt wird
-     *
-     * @param _factor Der Faktor um den herein- bzw. herausgezoomt wird
-     */
-    fun zoom(_factor: Double) {}
-
-    suspend fun zoomNonBlock(_factor: Double) = withContext(Dispatchers.Default) {
-        zoom(_factor)
     }
 
     /**
@@ -171,10 +143,30 @@ class GISModel {
      * @param _pt Der Punkt an dem herein- bzw. herausgezoomt wird
      * @param _factor Der Faktor um den herein- bzw. herausgezoomt wird
      */
-    fun zoom(_pt: Point, _factor: Double) {}
+    fun zoom(_pt: Point, _factor: Double) {
+        mImage = initCanvas()
+        mWorldMatrix = Matrix.zoomPoint(mWorldMatrix, _pt, _factor)
+        repaint()
+    }
 
     suspend fun zoomNonBlock(_pt: Point, _factor: Double) = withContext(Dispatchers.Default) {
         zoom(_pt, _factor)
+    }
+
+    /**
+     * Veraendert die interne Transformationsmatrix so, dass in das
+     * Zentrum des Anzeigebereiches herein- bzw. herausgezoomt wird
+     *
+     * @param _factor Der Faktor um den herein- bzw. herausgezoomt wird
+     */
+    fun zoom(_factor: Double) {
+        mImage = initCanvas()
+        mWorldMatrix = Matrix.zoomPoint(mWorldMatrix, Point(mWidth / 2, mHeight / 2), _factor)
+        repaint()
+    }
+
+    suspend fun zoomNonBlock(_factor: Double) = withContext(Dispatchers.Default) {
+        zoom(_factor)
     }
 
     /**
@@ -184,8 +176,15 @@ class GISModel {
      * werden soll
      * @return Die BoundingBox
      */
-    fun getMapBounds(_poly: Vector<Polygon>): Rectangle {
-        return Rectangle()
+    fun getMapBounds(_poly: List<Polygon>): Rectangle {
+        if (_poly.isEmpty()) return Rectangle(0, 0, mWidth, mHeight)
+        val boundingBox = Rectangle(_poly[0].bounds)
+
+        for (i in (1 until _poly.size)) {
+            boundingBox.add(_poly[i].bounds)
+        }
+
+        return boundingBox
     }
 
     suspend fun getMapBoundsNonBlocking(_poly: Vector<Polygon>): Rectangle = withContext(Dispatchers.Default) {
@@ -198,7 +197,11 @@ class GISModel {
      *
      * @param _delta Die Strecke, um die horizontal verschoben werden soll
      */
-    fun scrollHorizontal(_delta: Int) {}
+    fun scrollHorizontal(_delta: Int) {
+        mImage = initCanvas()
+        mWorldMatrix = Matrix.translate(_delta.toDouble(), 0.0) * mWorldMatrix
+        repaint()
+    }
 
     suspend fun scrollHorizontalNonBlocking(_delta: Int) = withContext(Dispatchers.Default) {
         scrollHorizontal(_delta)
@@ -210,9 +213,25 @@ class GISModel {
      *
      * @param _delta Die Strecke, um die vertikal verschoben werden soll
      */
-    fun scrollVertical(_delta: Int) {}
+    fun scrollVertical(_delta: Int) {
+        mImage = initCanvas()
+        mWorldMatrix = Matrix.translate(0.0, _delta.toDouble()) * mWorldMatrix
+        repaint()
+    }
 
     suspend fun scrollVerticalNonBlocking(_delta: Int) = withContext(Dispatchers.Default) {
         scrollVertical(_delta)
+    }
+
+
+    fun rotate(_alpha: Double) {
+        val centerX = mWidth / 2.0
+        val centerY = mHeight / 2.0
+        mImage = initCanvas()
+        mWorldMatrix = Matrix.translate(centerX, centerY) *
+                Matrix.rotate(_alpha) *
+                Matrix.translate(-centerX, -centerY) *
+                mWorldMatrix
+        repaint()
     }
 }

@@ -4,6 +4,7 @@ import at.shehata.ex2.gis.GISController
 import at.shehata.ex2.gis.GISModel
 import at.shehata.ex2.gis.GISView
 import at.shehata.ex2.utils.Matrix
+import at.shehata.ex2.utils.testZTF
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.stage.Stage
@@ -20,39 +21,10 @@ class GISApplication : Application() {
          * must be JvmStatic
          */
         @JvmStatic
-        fun main(_args: Array<String>) {
+//        fun main(_args: Array<String>) = launch(GISApplication::class.java)
+        fun main(_args:Array<String>) {
             launch(GISApplication::class.java)
-
-            val m1 = Matrix(
-                doubleArrayOf(
-                    2.0, 9.0, 1.0,
-                    2.0, 7.0, 2.0,
-                    5.0, 0.0, 1.0
-                )
-            )
-
-            val m2 = Matrix(
-                doubleArrayOf(
-                    1.0, 0.0, 7.0,
-                    0.0, 2.0, 0.0,
-                    9.0, 8.0, 5.0
-                )
-            )
-
-            println(m1 * m2)
-
-            println(
-                Matrix(
-                    doubleArrayOf(
-                        3.0, 0.0, -2.0,
-                        -3.0, 0.0, -2.0,
-                        3.0, 3.0, 1.0,
-                    )
-                )
-                    .inverse()
-            )
-
-            println(m1 * Point(2, 9))
+            testZTF()
         }
 
         /**

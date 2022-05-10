@@ -1,7 +1,9 @@
 package at.shehata.ex2.gis
 
 import at.shehata.ex2.GISApplication
+import at.shehata.ex2.gis.components.BottomBar
 import at.shehata.ex2.gis.components.ButtonActions
+import at.shehata.ex2.gis.components.CanvasPane
 import at.shehata.ex2.gis.components.MenuBar
 import at.shehata.ex2.interfaces.IDataObserver
 import javafx.scene.canvas.Canvas
@@ -35,32 +37,13 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
      */
     private fun start() {
         top = MenuBar()
-
-        val buttonPaneBtn = Button("Draw").apply {
-            id = ButtonActions.DRAW.name
-            style = "-fx-padding: 5"
-            onAction = mController.getActionHandler()
-        }
-        val buttonPane = FlowPane().apply {
-            style = "-fx-background-color: blue"
-            children += buttonPaneBtn
-        }
-        bottom = buttonPane
-
-        val canvasPane = StackPane().apply {
-            setMinSize(0.0, 0.0)
-            style = "-fx-background-color: red"
-            onMouseReleased = mController.getMouseHandler()
-            widthProperty().addListener(mController.getChangeHandler())
-            heightProperty().addListener(mController.getChangeHandler())
-        }
-        val canvas = Canvas().apply {
-            id = GISApplication.CANVAS_ID
-            widthProperty().bind(canvasPane.widthProperty())
-            heightProperty().bind(canvasPane.heightProperty())
-        }
-        canvasPane.children += canvas
-        center = canvasPane
+        center = CanvasPane(
+            mController.getMouseHandler(),
+            mController.getChangeHandler(),
+        )
+        bottom = BottomBar(mController.getActionHandler())
+        onKeyPressed = mController.getKeyHandler()
+        onKeyReleased = mController.getKeyHandler()
     }
 
     /**

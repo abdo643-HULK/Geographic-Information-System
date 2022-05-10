@@ -1,13 +1,13 @@
 plugins {
-    id 'java'
-    id 'application'
-    id 'java-library'
-    id 'org.jetbrains.kotlin.jvm' version '1.5.31'
-    id 'org.openjfx.javafxplugin' version '0.0.10'
-    id 'org.beryx.jlink' version '2.24.1'
+    id('java')
+    id('application')
+    id('java-library')
+    id('org.jetbrains.kotlin.jvm') version '1.5.31'
+    id('org.openjfx.javafxplugin') version '0.0.10'
+    id('org.beryx.jlink') version '2.24.1'
 }
 
-group 'at.shehata'
+group('at.shehata')
 
 repositories {
     mavenCentral()
@@ -28,7 +28,7 @@ tasks.withType(JavaCompile) {
 }
 
 application {
-    mainModule = 'at.shehata.ex2'
+//    mainModule = 'at.shehata.ex2'
     mainClass = 'at.shehata.ex2.GISApplication'
 }
 
@@ -40,12 +40,11 @@ application {
 
 javafx {
     version = '18.0.1'
-    modules = ['javafx.controls', 'javafx.fxml', 'javafx.swing']
+    modules = ['javafx.controls', 'javafx.swing']
 }
 
 dependencies {
     def libs = fileTree('libs') { include '*.jar' }
-//    project.logger.info("libs: ${libs.filter { it.isFile() }.files.name}")
     implementation(libs)
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-javafx
@@ -53,6 +52,10 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+}
+
+run {
+    enableAssertions = true
 }
 
 test {

@@ -21,41 +21,55 @@ class BottomBar(_handler: GISController.ActionHandler) : GridPane() {
     }
 
     fun start(_handler: GISController.ActionHandler) {
+        style += "-fx-background-color: blue; -fx-padding: 10"
+
+        val drawBtn = Button("Draw").apply {
+            id = ButtonActions.DRAW.name
+            style = "-fx-padding: 5"
+            onAction = _handler
+            add(this, 0, 1)
+        }
+
         val zoomToFitBtn = Button("ZTF").apply {
             id = ButtonActions.ZOOM_TO_FIT.name
             onAction = _handler
-        }
-
-        val zoomInBtn = Button("+").apply {
-            id = ButtonActions.ZOOM_IN.name
-            onAction = _handler
+            add(this, 1, 1)
         }
 
         val zoomOutBtn = Button("-").apply {
             id = ButtonActions.ZOOM_OUT.name
             onAction = _handler
+            add(this, 3, 1)
+        }
+
+        val zoomInBtn = Button("+").apply {
+            id = ButtonActions.ZOOM_IN.name
+            onAction = _handler
+            add(this, 4, 1)
         }
 
         val scrollUpBtn = Button("U").apply {
             id = ButtonActions.SCROLL_UP.name
             onAction = _handler
+            add(this, 6, 0)
         }
 
         val scrollDownBtn = Button("D").apply {
             id = ButtonActions.SCROLL_DOWN.name
             onAction = _handler
+            add(this, 6, 2)
         }
 
         val scrollRightBtn = Button("R").apply {
             id = ButtonActions.SCROLL_RIGHT.name
             onAction = _handler
+            add(this, 7, 1)
         }
 
         val scrollLeftBtn = Button("L").apply {
             id = ButtonActions.SCROLL_LEFT.name
             onAction = _handler
+            add(this, 5, 1)
         }
-
-
     }
 }

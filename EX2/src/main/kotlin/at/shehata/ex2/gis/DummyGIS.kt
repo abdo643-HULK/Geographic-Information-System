@@ -1,11 +1,13 @@
 package at.shehata.ex2.gis
 
+import at.shehata.ex2.utils.GeoObject
 import de.intergis.JavaClient.comm.CgConnection
 import de.intergis.JavaClient.comm.CgGeoConnection
 import de.intergis.JavaClient.comm.CgGeoInterface
 import de.intergis.JavaClient.gui.IgcConnection
 import java.awt.Polygon
 import java.util.*
+import kotlin.collections.List
 
 open class DummyGIS {
     companion object {
@@ -25,7 +27,8 @@ open class DummyGIS {
             CgConnection(
                 "admin",
                 "admin",
-                "T:localhost:4949",
+//                "T:localhost:4949",
+                "T:10.29.17.141:4949",
                 null
             )
         )
@@ -48,33 +51,59 @@ open class DummyGIS {
         return false
     }
 
+//    fun extractData(_stmt: String): Vector<Polygon>? {
+//        try {
+//            val stmt = mGeointerface.Execute(_stmt)
+//            val cursor = stmt.cursor
+//            val objectContainer = Vector<Polygon>()
+//            while (cursor.next()) {
+//                val obj = cursor.getObject()
+//                println("NAME --> " + obj.name)
+//                println("TYP  --> " + obj.category)
+//
+//                val parts = obj.parts
+//                for (i in parts.indices) {
+//                    println("PART $i")
+//                    val pointCount = parts[i].pointCount
+//                    val xArray = parts[i].x
+//                    val yArray = parts[i].y
+//                    val poly = Polygon(xArray, yArray, pointCount)
+//                    for (j in 0 until pointCount) {
+//                        println("[" + xArray[j] + " ; " + yArray[j] + "]")
+//                    } // for j
+//                    objectContainer.addElement(poly)
+//                } // for i
+//                println()
+//            } // while cursor
+//            return objectContainer
+//        } catch (_e: Exception) {
+//            _e.printStackTrace()
+//        }
+//        return null
+//    }
+
     /**
      * Extrahiert einige Geoobjekte aus dem Server
      */
-    fun extractData(_stmt: String): Vector<Polygon>? {
+    fun extractData(_stmt: String): List<GeoObject>? {
         try {
             val stmt = mGeointerface.Execute(_stmt)
             val cursor = stmt.cursor
-            val objectContainer = Vector<Polygon>()
+            val objectContainer = mutableListOf<GeoObject>()
+
             while (cursor.next()) {
                 val obj = cursor.getObject()
-                println("NAME --> " + obj.name)
-                println("TYP  --> " + obj.category)
 
                 val parts = obj.parts
                 for (i in parts.indices) {
-                    println("PART $i")
                     val pointCount = parts[i].pointCount
                     val xArray = parts[i].x
                     val yArray = parts[i].y
                     val poly = Polygon(xArray, yArray, pointCount)
-                    for (j in 0 until pointCount) {
-                        println("[" + xArray[j] + " ; " + yArray[j] + "]")
-                    } // for j
-                    objectContainer.addElement(poly)
+                    objectContainer.add(GeoObject(obj.name, obj.category, poly))
                 } // for i
-                println()
             } // while cursor
+
             return objectContainer
         } catch (_e: Exception) {
             _e.printStackTrace()
