@@ -1,7 +1,7 @@
-package at.shehata.ex2.gis.components
+package at.shehata.ex3.gis.components
 
-import at.shehata.ex2.GISApplication
-import at.shehata.ex2.gis.GISController
+import at.shehata.ex3.GISApplication
+import at.shehata.ex3.gis.GISController
 import javafx.scene.canvas.Canvas
 import javafx.scene.layout.StackPane
 

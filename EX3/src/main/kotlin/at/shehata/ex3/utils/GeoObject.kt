@@ -1,4 +1,4 @@
-package at.shehata.ex2.utils
+package at.shehata.ex3.utils
 
 import java.awt.Polygon
 import java.awt.Rectangle
@@ -10,7 +10,7 @@ data class GeoObject(private val mId: String, private val mType: Int, private va
     /**
      * Liefert die Id des Geo-Objektes
      * @return Die Id des Objektes
-     * @see kotlin.String
+     * @see java.lang.String
      */
     fun getId(): String = mId
 

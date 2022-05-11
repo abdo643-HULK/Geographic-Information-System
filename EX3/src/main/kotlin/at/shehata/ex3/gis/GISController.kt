@@ -1,6 +1,6 @@
-package at.shehata.ex2.gis
+package at.shehata.ex3.gis
 
-import at.shehata.ex2.gis.components.ButtonActions
+import at.shehata.ex3.gis.components.ButtonActions
 import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
@@ -10,6 +10,7 @@ import javafx.scene.control.Button
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseEvent
+import javafx.scene.input.ScrollEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,7 +23,10 @@ import kotlin.math.PI
  *
  * @param mModel The model that contains the business logic
  */
-class GISController(private val mModel: GISModel) {
+class GISController(
+    private val mModel: GISModel,
+    private val mView: GISView
+) {
     /**
      * coroutine for the controller
      */
@@ -65,6 +69,7 @@ class GISController(private val mModel: GISModel) {
      * @see KeyHandler
      */
     fun getKeyHandler() = mKeyHandler
+
 
     /**
      * handler for the button
@@ -147,6 +152,12 @@ class GISController(private val mModel: GISModel) {
                 KeyCode.D -> mModel.scrollHorizontal(-20)
                 else -> return
             }
+        }
+    }
+
+    inner class ScrollHandler : EventHandler<ScrollEvent> {
+        override fun handle(event: ScrollEvent) {
+
         }
     }
 

@@ -1,14 +1,12 @@
-package at.shehata.ex2
+package at.shehata.ex3
 
-import at.shehata.ex2.gis.GISController
-import at.shehata.ex2.gis.GISModel
-import at.shehata.ex2.gis.GISView
-import at.shehata.ex2.utils.Matrix
-import at.shehata.ex2.utils.testZTF
+import at.shehata.ex3.gis.GISController
+import at.shehata.ex3.gis.GISModel
+import at.shehata.ex3.gis.GISView
+import at.shehata.ex3.utils.testZTF
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.stage.Stage
-import java.awt.Point
 
 /**
  * The single instance of the application that runs
@@ -22,15 +20,12 @@ class GISApplication : Application() {
          */
         @JvmStatic
         fun main(_args: Array<String>) = launch(GISApplication::class.java)
-//        fun main(_args:Array<String>) {
-//            launch(GISApplication::class.java)
-//            testZTF()
-//        }
 
         /**
          * The ID of the Canvas for lookup
          */
         const val CANVAS_ID = "my-canvas"
+        const val OVERLAY_ID = "my-canvas-overlay"
 
         /**
          * Initial size of the Scene
@@ -49,7 +44,7 @@ class GISApplication : Application() {
      */
     override fun init() {
         val model = GISModel()
-        val controller = GISController(model)
+        val controller = GISController(model, mRoot)
         mRoot = GISView(controller)
         model.addMapObserver(mRoot)
     }

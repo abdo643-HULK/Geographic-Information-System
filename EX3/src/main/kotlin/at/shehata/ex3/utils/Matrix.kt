@@ -1,21 +1,24 @@
-package at.shehata.ex2.utils
+package at.shehata.ex3.utils
 
-import at.shehata.ex2.gis.extensions.plus
+import at.shehata.ex3.gis.extensions.plus
 import java.awt.Point
 import java.awt.Polygon
 import java.awt.Rectangle
+import java.awt.geom.Point2D
 import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.math.min
+import kotlin.math.sin
 
 /**
  * The 2d size of the Matrix
  */
 private const val MATRIX_SIZE = 9
+
 /**
  * Matrix Rows, because we want a 3x3 Matrix
  */
 private const val MATRIX_ROWS = 3
+
 /**
  * Matrix Columns, because we want a 3x3 Matrix
  */
@@ -26,11 +29,13 @@ private const val MATRIX_COLUMNS = 3
  * Array instead of a 2d
  */
 private const val FIRST_ROW_INDEX = 0
+
 /**
  * Offset for the second row because we are using a 1d
  * Array instead of a 2d
  */
 private const val SECOND_ROW_INDEX = 3
+
 /**
  * Offset for the third row because we are using a 1d
  * Array instead of a 2d
@@ -239,6 +244,7 @@ data class Matrix(private val mMatrix: DoubleArray) {
     operator fun times(_other: Matrix): Matrix = multiply(_other)
     operator fun times(_other: Polygon): Polygon = multiply(_other)
     operator fun times(_other: Rectangle): Rectangle = multiply(_other)
+    operator fun times(_other: Point2D.Double): Point2D.Double = multiply(_other)
 
     /**
      * Liefert die Invers-Matrix der Transformationsmatrix
@@ -291,6 +297,12 @@ data class Matrix(private val mMatrix: DoubleArray) {
         }
 
         return Point(product[0].toInt(), product[1].toInt())
+    }
+
+    fun multiply(_pt: Point2D.Double): Point2D.Double {
+        val destX = mMatrix[0 * MATRIX_COLUMNS + 0] * _pt.x + mMatrix[0 * MATRIX_COLUMNS + 1] * _pt.y
+        val destY = mMatrix[1 * MATRIX_COLUMNS + 0] * _pt.x + mMatrix[1 * MATRIX_COLUMNS + 1] * _pt.y
+        return Point2D.Double(destX, destY)
     }
 
     /**

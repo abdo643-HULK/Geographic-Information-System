@@ -1,4 +1,4 @@
-package at.shehata.ex2.gis.extensions
+package at.shehata.ex3.gis.extensions
 
 import java.awt.Rectangle
 

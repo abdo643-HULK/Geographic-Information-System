@@ -1,4 +1,4 @@
-package at.shehata.ex2.gis.components
+package at.shehata.ex3.gis.components
 
 import javafx.scene.control.Menu
 import javafx.scene.control.MenuItem
@@ -33,12 +33,11 @@ class MenuBar : javafx.scene.control.MenuBar() {
      * @return The Menu 'A'
      * @see javafx.scene.control.Menu
      */
-    private fun createA(): Menu {
-        val menu = Menu("A")
-        val menuItem01 = MenuItem("Test")
-        menuItem01.setOnAction { println("Menu Item Test pressed") }
-        menu.items.addAll(menuItem01)
-        return menu
+    private fun createA() = Menu("A").apply {
+        val menuItem01 = MenuItem("Test").apply {
+            setOnAction { println("Menu Item Test pressed") }
+        }
+        items.addAll(menuItem01)
     }
 
     /**
@@ -48,22 +47,20 @@ class MenuBar : javafx.scene.control.MenuBar() {
      * @return The Menu 'B'
      * @see javafx.scene.control.Menu
      */
-    private fun createB(): Menu {
-        val menu = Menu("B")
-        val serverA = RadioMenuItem("Server-A")
-        serverA.id = MENU_B_ITEM_01
-        serverA.setOnAction { println("Menu Item Server-A pressed") }
-        val serverB = RadioMenuItem("Server-B")
-        serverB.id = MENU_B_ITEM_02
-        serverB.setOnAction { println("Menu Item Server-B pressed") }
-
+    private fun createB() = Menu("B").apply {
         val tg = ToggleGroup()
-        serverA.toggleGroup = tg
-        serverA.isSelected = true
-        serverB.toggleGroup = tg
+        val serverA = RadioMenuItem("Server-A").apply {
+            id = MENU_B_ITEM_01
+            toggleGroup = tg
+            isSelected = true
+            setOnAction { println("Menu Item Server-A pressed") }
+        }
+        val serverB = RadioMenuItem("Server-B").apply {
+            id = MENU_B_ITEM_02
+            toggleGroup = tg
+            setOnAction { println("Menu Item Server-B pressed") }
+        }
 
-        menu.items.addAll(serverA, serverB)
-
-        return menu
+        items.addAll(serverA, serverB)
     }
 }
