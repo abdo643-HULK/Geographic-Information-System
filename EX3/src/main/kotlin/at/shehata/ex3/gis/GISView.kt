@@ -7,6 +7,7 @@ import at.shehata.ex3.gis.components.MenuBar
 import at.shehata.ex3.interfaces.IDataObserver
 import javafx.embed.swing.SwingFXUtils
 import javafx.scene.canvas.Canvas
+import javafx.scene.control.TextField
 import javafx.scene.layout.BorderPane
 import javafx.scene.paint.Color
 import java.awt.Image
@@ -21,6 +22,12 @@ import java.awt.image.BufferedImage
  * @param mController the controller with the handlers for the elements
  */
 class GISView(private val mController: GISController) : IDataObserver, BorderPane() {
+    companion object {
+        const val SCALE_FIELD_ID = "scale-field"
+    }
+
+    private var mStartDrag = false
+
     /**
      * The image to render on the canvas
      */
@@ -40,9 +47,10 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
             mController.getMouseHandler(),
             mController.getChangeHandler(),
         )
-        bottom = BottomBar(mController.getActionHandler())
+        bottom = BottomBar(mController.getActionHandler(), mController.getKeyHandler())
         onKeyPressed = mController.getKeyHandler()
         onKeyReleased = mController.getKeyHandler()
+        onScroll = mController.getScrollHandler()
     }
 
     /**
@@ -51,7 +59,10 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
     fun repaint() {
         val writable = SwingFXUtils.toFXImage(mImage, null)
         val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+
         canvas.graphicsContext2D.apply {
+            restore()
+            mStartDrag = false
             clearRect(0.0, 0.0, canvas.width, canvas.height)
             drawImage(writable, 0.0, 0.0)
         }
@@ -61,7 +72,8 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
         val overlay = scene.lookup("#${GISApplication.OVERLAY_ID}") as Canvas
         overlay.graphicsContext2D.apply {
             clearRect(0.0, 0.0, scene.width, scene.height)
-            stroke = Color.AZURE
+            stroke = Color.ALICEBLUE
+            lineWidth = 2.0
             strokeRect(_rect.minX, _rect.minY, _rect.width, _rect.height)
         }
     }
@@ -83,9 +95,12 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
         canvas.graphicsContext2D.apply {
             clearRect(0.0, delta, width, height) // top
             clearRect(0.0, height - delta, width, height) // bottom
+            if (!mStartDrag) {
+                mStartDrag = true
+                save()
+            }
+
             translate(_dX, _dY)
-
-
             val writable = SwingFXUtils.toFXImage(mImage, null)
             drawImage(writable, 0.0, 0.0)
         }
@@ -95,8 +110,11 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
      * updates the image on repaints the canvas
      * when it receives an update from the Subject
      */
-    override fun update(_img: Image) {
+    override fun update(_img: Image, _scale: Int) {
         mImage = _img as BufferedImage
+        (scene.lookup("#${SCALE_FIELD_ID}") as TextField).apply {
+            text = "$_scale"
+        }
         repaint()
     }
 

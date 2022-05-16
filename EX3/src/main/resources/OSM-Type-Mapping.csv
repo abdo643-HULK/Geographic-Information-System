@@ -1,0 +1,144 @@
+Key,Type Group,Value,Type ID,Erläuterung
+highway,1000,motorway,1010,Autobahn
+highway,1000,motorway_link,1011,Anschluss/Zubringer
+highway,1000,trunk,1020,Autobahnähnliche Strasse
+highway,1000,trunk_link,1021,Anschluss/Zubringer
+highway,1000,primary,1030,Bundesstraße
+highway,1000,primary_link,1031,Anschluss/Zubringer
+highway,1000,secondary,1040,Landstraße
+highway,1000,secondary_link,1041,Anschluss/Zubringer
+highway,1000,tertiary,1050,Kreisstraße
+highway,1000,tertiary_link,1051,Anschluss/Zubringer
+highway,1000,living_street,1060,Verkehrsberuhigte Straße
+highway,1000,pedestrian,1070,Fußgängerzohne
+highway,1000,residential,1080,Straße in Wohngebieten
+highway,1000,unclassified,1090,Nebenstraßen
+highway,1000,road,1091,unbestimmte Straße
+highway,1000,service,1100,Erschließungsweg
+highway,1000,track,1110,Feldweg
+highway,1000,path,1120,Pfad
+highway,1000,footway,1130,Fußweg
+waterway,2000,river,2001,Fluss
+waterway,2000,canal,2002,Kanal
+waterway,2000,ditch,2003,Entwässerungsgraben
+waterway,2000,stream,2004,Bach
+waterway,2000,drain,2005,Abwassergraben
+waterway,2000,riverbank,2006,Flussufer
+waterway,2000,dam,2007,Damm
+railway,3000,rail,3001,Eisenbahn (auch S-Bahn)
+railway,3000,subway,3002,U-Bahn
+railway,3000,tram,3003,Straßenbahn
+railway,3000,light_rail,3004,Stadtbahn
+leisure,4000,nature_reserve,4001,Naturschutzgebiet
+leisure,4000,park,4002,Park
+leisure,4000,common,4003,
+leisure,4000,playground,4004,Spielplatz
+leisure,4000,garden,4005,öffentlicher Garten (botanisch)
+leisure,4000,pitch,4006,Spielfeld
+leisure,4000,stadium,4007,Stadion
+leisure,4000,swimming_pool,4008,Schwimmbecken
+leisure,4000,water_park,4009,Wasserpark
+landuse,5000,residential,5001,Wohngebiet
+landuse,5000,industrial,5002,Gewerbe-/Industriegebiet
+landuse,5000,commercial,5003,Büros
+landuse,5000,forest,5004,Forst
+landuse,5000,grass,5005,Rasenfläche
+landuse,5000,meadow,5006,Weide
+landuse,5000,farm,5007,Bauernhaus
+landuse,5000,farmland,5008,Äcker
+landuse,5000,farmyard,5009,Bauernhof
+landuse,5000,allotments,5010,Kleingärten
+landuse,5000,cemetery,5011,Friedhof
+landuse,5000,recreation_ground,5012,Erholungsgebiet
+landuse,5000,reservoir,5013,Speicherbecken
+landuse,5000,vineyard,5014,Weinberg
+landuse,5000,basin,5015,Rückhaltebecken
+landuse,5000,retail,5016,Einkaufszentrum/Einzelhandel
+landuse,5000,village_green,5017,Dorfplatz (grasbewachsen)
+landuse,5000,railway,5018,Bahnnutzung
+landuse,5000,crop,5019,Getreideanbau
+natural,6000,grassland,6001,Grasland
+natural,6000,wood,6002,Naturwald
+natural,6000,scrub,6003,Buschland
+natural,6000,fell,6004,Bergweide
+natural,6000,water,6005,"Wasser (See, Teich, …)"
+natural,6000,land,6006,
+natural,6000,rock,6007,Felsgruppe
+natural,6000,beach,6008,Strand
+natural,6000,coastline,6009,Küstenlinie
+natural,6000,bare_rock,6010,Fels
+natural,6000,scree,6011,Schutt
+natural,6000,wetland,6012,Feuchtgebiet
+natural,6000,cliff,6013,Klippen
+natural,6000,tree,6014,bedeutender Baum
+natural,6000,peak,6015,Gipfel
+place,7000,city,7001,Hauptstadt
+place,7000,town,7002,Stadt
+place,7000,village,7003,Dorf
+place,7000,hamlet,7004,"""Nest"""
+place,7000,island,7005,Insel
+place,7000,islet,7006,sehr kleine Insel
+place,7000,locality,7007,"unbewohnt, aber benannt"
+place,7000,isolated_dwelling,7008,abgelegenes Haus
+boundary,8000,administrative (admin_level 2),8001,Landesgrenze
+boundary,8000,administrative (admin_level 4),8002,Bundesländer
+boundary,8000,administrative (admin_level 5),8003,Regierungsbezirk
+boundary,8000,administrative (admin_level 6),8004,Landkreis
+boundary,8000,administrative (admin_level 8),8005,Gemeinde
+boundary,8000,administrative (admin_level 9),8006,Stadtbezirke
+boundary,8000,administrative (admin_level 10),8007,Stadtteil
+building,9000,residential,9001,Gebäude (mehrheitlich Wohnraum)
+building,9000,apartments,9002,Mehrparteienhaus
+building,9000,house,9003,Einfamilienhaus
+building,9000,greenhouse,9004,Gewächshaus
+building,9000,school,9005,Schulgebäude
+building,9000,office,9006,
+building,9000,industrial,9007,Industrie
+building,9000,church,9008,Kirchengebäude
+building,9000,warehouse,9009,Lagerhaus
+building,9000,supermarket,9010,Supermarkt
+building,9000,public,9011,öffentliches Gebäude
+building,9000,hospital,9012,Krankenhaus
+building,9000,monastery,9013,
+building,9000,farm,9014,Bauernhaus
+building,9000,civic,9015,"bürgerliches Gebäude (Schwimmbad, …)"
+building,9000,castle,9016,
+building,9000,university,9017,Universtitätsgebäude
+building,9000,stable,9018,Stall
+building,9000,ruins,9019,Ruine
+building,9000,garage,9020,Garage
+building,9000,garages,9021,Garagen
+building,9000,hut,9022,Hütte
+building,9000,roof,9023,Dach
+building,9000,detached,9024,Einfamilienhaus
+building,9000,shed,9025,Unterstand
+building,9000,commercial,9026,Bewerbe
+building,9000,terrace,9027,Terrasse
+building,9000,retail,9028,Einzelhandel
+building,9000,yes,9099,universelles Gebäude (unbestimmt)
+amenity,10000,hospital,10001,Krankenhaus
+amenity,10000,pharmacy,10002,Apotheke
+amenity,10000,police,10003,Polizei
+amenity,10000,fire_station,10004,Feuerwehr
+amenity,10000,fuel,10005,Tankstelle
+amenity,10000,fast_food,10006,Fast-Food-Restaurant
+amenity,10000,bank,10007,Bank
+amenity,10000,university,10008,Universität
+amenity,10000,college,10009,Hochschule
+amenity,10000,school,10010,Schule
+amenity,10000,kindergarten,10011,Kindergarten
+amenity,10000,place_of_worship,10012,Gebetshaus
+amenity,10000,parking,10013,Parkplatz
+amenity,10000,swimming_pool,10014,Schwimmbad
+amenity,10000,restaurant,10015,Restaurant
+amenity,10000,parking_space,10016,Parkplatz
+amenity,10000,grave_yard,10017,Friedhof
+amenity,10000,prison,10018,Gefängnis
+amenity,10000,bench,10019,Sitzbank
+amenity,10000,cafe,10020,Café
+amenity,10000,post_box,10021,Postkasten
+amenity,10000,post_office,10022,Post
+amenity,10000,recycling,10023,Recycling-Hof
+amenity,10000,toilets,10024,Toilette
+amenity,10000,shelter,10025,Unterstand
+amenity,10000,pub,10026,Bar

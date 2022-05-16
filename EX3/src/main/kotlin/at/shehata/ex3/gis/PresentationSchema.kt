@@ -9,13 +9,13 @@ import java.awt.Color
 data class PresentationSchema(
     private val mFillColor: Color,
     private val mLineColor: Color,
-    private val mLineWidth: Float = -1.0f
+    private val mLineWidth: Float = 1.0f
 ) {
     fun paint(_g: Graphics2D, _obj: GeoObject, _m: Matrix) {
         _g.color = mFillColor
-        _g.fillPolygon(_m * _obj.getPoly())
+        _g.fillPolygon(_m * _obj.mPoly)
         _g.color = mLineColor
         _g.stroke = BasicStroke(mLineWidth)
-        _g.drawPolygon(_m * _obj.getPoly())
+        _g.drawPolygon(_m * _obj.mPoly)
     }
 }

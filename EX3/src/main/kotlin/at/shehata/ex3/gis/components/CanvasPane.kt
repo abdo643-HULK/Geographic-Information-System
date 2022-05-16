@@ -20,6 +20,7 @@ class CanvasPane(
     init {
         setMinSize(0.0, 0.0)
         onMousePressed = _mouseHandler
+        onMouseDragged = _mouseHandler
         onMouseReleased = _mouseHandler
         val width = widthProperty()
         val height = heightProperty()
@@ -30,6 +31,11 @@ class CanvasPane(
             widthProperty().bind(width)
             heightProperty().bind(height)
         }
-        children += canvas
+        val overlay = Canvas().apply {
+            id = GISApplication.OVERLAY_ID
+            widthProperty().bind(width)
+            heightProperty().bind(height)
+        }
+        children += arrayOf(canvas, overlay)
     }
 }

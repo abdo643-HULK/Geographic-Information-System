@@ -4,5 +4,5 @@ import java.awt.Image
 import java.awt.Polygon
 
 interface IDataObserver {
-    fun update(_img: Image)
+    fun update(_img: Image, _scale: Int)
 }

@@ -3,11 +3,20 @@ package at.shehata.ex3.gis
 import at.shehata.ex3.interfaces.IDataObserver
 import at.shehata.ex3.utils.GeoObject
 import at.shehata.ex3.utils.Matrix
+import at.shehata.ex3.utils.POIObject
+import at.shehata.ex3.utils.POITypes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.*
+import java.awt.geom.Point2D
 import java.awt.image.BufferedImage
 import java.util.*
+import javax.imageio.ImageIO
+
+const val INCHES_PER_CENTIMETER = 2.54
+
+private const val POI_IMAGE_HEIGHT = 28
+private const val POI_IMAGE_WIDTH = 20
 
 /**
  * Contains the core logic that the controller calls
@@ -15,10 +24,22 @@ import java.util.*
 open class GISModel {
     private var mWorldMatrix = Matrix()
 
+    private val mPOIsImage = BufferedImage(POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, BufferedImage.TRANSLUCENT).let {
+        val g2d = it.createGraphics()
+        val img = ImageIO.read(javaClass.getResource("/POI.png"))
+        g2d.drawImage(img, 0, 0, POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, null)
+        g2d.dispose()
+        it
+    }
+
     /**
      * List of all Polygons to render
      */
     private val mData = mutableListOf<GeoObject>()
+
+    private val mPOIData = mutableListOf<POIObject>()
+
+    private val mDotPerInch = 72.0
 
     /**
      * width and height of the image
@@ -50,8 +71,6 @@ open class GISModel {
      */
     fun setWidth(_width: Int) {
         mWidth = _width
-//        mImage = initCanvas()
-//        repaint()
         zoomToFit()
     }
 
@@ -63,24 +82,31 @@ open class GISModel {
      */
     fun setHeight(_height: Int) {
         mHeight = _height
-//        mImage = initCanvas()
-//        repaint()
         zoomToFit()
     }
-
 
     suspend fun loadData() = withContext(Dispatchers.Default) {
         val stmt = "SELECT * FROM data WHERE type in (233, 931, 932, 933, 934, 1101)"
         DummyGIS().apply {
             if (init()) {
-                extractData(stmt)?.let { mData.addAll(it.toTypedArray()) }
+                extractData(stmt)?.let { mData += it.toTypedArray() }
             }
         }
     }
 
+    suspend fun loadPOIData() = withContext(Dispatchers.Default) {
+        mPOIData += mutableListOf(
+            POIObject("0", POITypes.MOSQUE, Polygon(intArrayOf(197), intArrayOf(262), 1)),
+            POIObject("1", POITypes.POST, Polygon(intArrayOf(349), intArrayOf(308), 1)),
+            POIObject("2", POITypes.PUB, Polygon(intArrayOf(258), intArrayOf(149), 1)),
+            POIObject("3", POITypes.SCHOOL, Polygon(intArrayOf(363), intArrayOf(203), 1)),
+            POIObject("4", POITypes.SHOP, Polygon(intArrayOf(376), intArrayOf(255), 1)),
+        )
+    }
 
-    suspend fun drawData() {
-        loadData()
+    fun hidePOI(){
+        mImage = initCanvas()
+        mPOIData.clear()
         repaint()
     }
 
@@ -91,11 +117,17 @@ open class GISModel {
     fun repaint() {
         val context = DummyGIS().getDrawingContext()
         mImage.graphics.let { graphics ->
+            val gc = graphics as Graphics2D
             graphics.color = Color.BLACK
             graphics.fillRect(0, 0, mWidth, mHeight)
             mData.forEach {
-                val values = context.getSchema(it.getType()) ?: context.getDefaultSchema()
-                values.paint(graphics as Graphics2D, it, mWorldMatrix)
+                val values = context.getSchema(it.mType) ?: context.getDefaultSchema()
+                values.paint(gc, it, mWorldMatrix)
+            }
+            mPOIData.forEach {
+//                (mWorldMatrix * it.mPoly).xpoints[0],
+//                (mWorldMatrix * it.mPoly).ypoints[0],
+                gc.drawImage(mPOIsImage, it.mPoly.xpoints[0], it.mPoly.ypoints[0], null)
             }
         }
         update(mImage)
@@ -107,7 +139,7 @@ open class GISModel {
      * @param _house the updated image
      */
     protected open fun update(_house: Image) {
-        mObserver.update(_house)
+        mObserver.update(_house, calculateScale())
     }
 
     /**
@@ -115,6 +147,23 @@ open class GISModel {
      */
     fun addMapObserver(_observer: IDataObserver) {
         mObserver = _observer
+    }
+
+    /**
+     * Berechnet den gerade sichtbaren Massstab der Karte
+     *
+     * @return der Darstellungsmassstab
+     * @see Matrix
+     */
+    protected fun calculateScale(): Int {
+        val vector = Point2D.Double(0.0, 1.0)
+        val vectorTransformed = (mWorldMatrix * vector)
+
+        val a = mDotPerInch / INCHES_PER_CENTIMETER
+        val b = vector.distance(0.0, 0.0)
+        val c = vectorTransformed.distance(0.0, 0.0)
+
+        return (a * b / c).toInt()
     }
 
     /**
@@ -158,8 +207,8 @@ open class GISModel {
     fun zoomToFit() {
         mImage = initCanvas()
         mWorldMatrix = Matrix.zoomToFit(
-            getMapBounds(mData.map { it.getPoly() }),
-            Rectangle(0, 0, mWidth, mHeight - 5)
+            getMapBounds(mData.map { it.mPoly }),
+            Rectangle(0, 0, mWidth, mHeight)
         )
         repaint()
     }
@@ -168,22 +217,40 @@ open class GISModel {
         zoomToFit()
     }
 
+    fun zoomTo(_rec: Rectangle) {
+        mImage = initCanvas()
+        mWorldMatrix = Matrix.zoomToFit(mWorldMatrix.inverse() * _rec, Rectangle(0, 0, mWidth, mHeight))
+        repaint()
+    }
+
+    suspend fun zoomToNonBlock(_rec: Rectangle) = withContext(Dispatchers.Default) {
+        zoomTo(_rec)
+    }
+
     /**
      * Stellt intern eine Transformationsmatrix zur Verfuegung, die so
      * skaliert, verschiebt und spiegelt, dass die zu zeichnenden Polygone
      * komplett in den Anzeigebereich passen
      */
-    fun zoomToScale() {
+    fun zoomToScale(_scale: Int) {
         mImage = initCanvas()
-        mWorldMatrix = Matrix.zoomToFit(
-            getMapBounds(mData.map { it.getPoly() }),
-            Rectangle(0, 0, mWidth, mHeight - 5)
+        val vector = Point2D.Double(0.0, 1.0)
+
+        val a = mDotPerInch / INCHES_PER_CENTIMETER
+        val b = vector.distance(0.0, 0.0)
+        val c = (a * b / _scale)
+
+        mWorldMatrix = Matrix.zoomPoint(
+            mWorldMatrix,
+            Point(mWidth / 2, mHeight / 2),
+            calculateScale() / _scale.toDouble()
         )
+
         repaint()
     }
 
-    suspend fun zoomToScaleNonBlock() = withContext(Dispatchers.Default) {
-        zoomToScale()
+    suspend fun zoomToScaleNonBlock(_scale: Int) = withContext(Dispatchers.Default) {
+        zoomToScale(_scale)
     }
 
     /**
@@ -195,7 +262,6 @@ open class GISModel {
     fun scrollHorizontal(_delta: Int) {
         mImage = initCanvas()
         mWorldMatrix = Matrix.translate(_delta.toDouble(), 0.0) * mWorldMatrix
-        repaint()
     }
 
     suspend fun scrollHorizontalNonBlocking(_delta: Int) = withContext(Dispatchers.Default) {
@@ -211,13 +277,11 @@ open class GISModel {
     fun scrollVertical(_delta: Int) {
         mImage = initCanvas()
         mWorldMatrix = Matrix.translate(0.0, _delta.toDouble()) * mWorldMatrix
-        repaint()
     }
 
     suspend fun scrollVerticalNonBlocking(_delta: Int) = withContext(Dispatchers.Default) {
         scrollVertical(_delta)
     }
-
 
     fun rotate(_alpha: Double) {
         val centerX = mWidth / 2.0
@@ -233,13 +297,14 @@ open class GISModel {
     /**
      * Ermittelt die Geo-Objekte, die den Punkt (in Bildschirmkoordinaten)
      * enthalten
+     *
      * @param _pt Ein Selektionspunkt im Bildschirmkoordinatensystem
-     * @return Ein Vektor von Geo-Objekte, die den Punkt enthalten
+     * @return Eine Liste von Geo-Objekte, die den Punkt enthalten
      * @see java.awt.Point
      * @see GeoObject
      */
-    fun initSelection(_pt: Point): Vector<GeoObject> {
-        return Vector()
+    fun initSelection(_pt: Point): List<GeoObject> {
+        return listOf()
     }
 
     /**
@@ -247,16 +312,17 @@ open class GISModel {
      * skaliert, verschiebt und spiegelt, dass die zu zeichnenden Polygone
      * innerhalb eines definierten Rechtecks (_winBounds) komplett in den
      * Anzeigebereich (die Zeichenflaeche) passen
+     *
      * @param _mapBounds Der darzustellende Bereich in Bildschirm-Koordinaten
      */
-    fun zoomRect(_winBounds: Rectangle) {
+    fun zoomRect(_mapBounds: Rectangle) {
 
     }
 
     /**
-     * Ermittelt die gemeinsame BoundingBox der uebergebenen Polygone
+     * Ermittelt die gemeinsame BoundingBox der übergebenen Polygone
      *
-     * @param _poly Die Polygone, fuer die die BoundingBox berechnet
+     * @param _poly Die Polygone, für die die BoundingBox berechnet
      * werden soll
      * @return Die BoundingBox
      */

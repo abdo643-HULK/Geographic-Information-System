@@ -30,7 +30,7 @@ class GISApplication : Application() {
         /**
          * Initial size of the Scene
          */
-        const val SCENE_HEIGHT = 480.0
+        const val SCENE_HEIGHT = 480.0 * 1.205
         const val SCENE_WIDTH = 640.0
     }
 
@@ -44,8 +44,9 @@ class GISApplication : Application() {
      */
     override fun init() {
         val model = GISModel()
-        val controller = GISController(model, mRoot)
+        val controller = GISController(model)
         mRoot = GISView(controller)
+        controller.mView = mRoot
         model.addMapObserver(mRoot)
     }
 

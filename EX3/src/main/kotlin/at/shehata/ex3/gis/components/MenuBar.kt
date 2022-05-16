@@ -47,15 +47,15 @@ class MenuBar : javafx.scene.control.MenuBar() {
      * @return The Menu 'B'
      * @see javafx.scene.control.Menu
      */
-    private fun createB() = Menu("B").apply {
+    private fun createB() = Menu("Server").apply {
         val tg = ToggleGroup()
-        val serverA = RadioMenuItem("Server-A").apply {
+        val serverA = RadioMenuItem("3857").apply {
             id = MENU_B_ITEM_01
             toggleGroup = tg
             isSelected = true
             setOnAction { println("Menu Item Server-A pressed") }
         }
-        val serverB = RadioMenuItem("Server-B").apply {
+        val serverB = RadioMenuItem("4326").apply {
             id = MENU_B_ITEM_02
             toggleGroup = tg
             setOnAction { println("Menu Item Server-B pressed") }
