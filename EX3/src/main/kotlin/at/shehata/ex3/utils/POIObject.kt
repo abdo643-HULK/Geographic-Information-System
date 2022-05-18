@@ -14,4 +14,4 @@ class POIObject(
     _id: String,
     _type: POITypes,
     _poly: Polygon
-) : GeoObject(_id, _type.mType, _poly)
+) : GeoObject(_id, _type.mType, listOf(_poly))

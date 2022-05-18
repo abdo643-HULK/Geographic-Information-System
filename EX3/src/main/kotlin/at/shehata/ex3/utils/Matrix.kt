@@ -1,6 +1,6 @@
 package at.shehata.ex3.utils
 
-import at.shehata.ex3.gis.extensions.plus
+import at.shehata.ex3.client.gis.extensions.plus
 import java.awt.Point
 import java.awt.Polygon
 import java.awt.Rectangle

@@ -1,9 +1,8 @@
 package at.shehata.ex3
 
-import at.shehata.ex3.gis.GISController
-import at.shehata.ex3.gis.GISModel
-import at.shehata.ex3.gis.GISView
-import at.shehata.ex3.utils.testZTF
+import at.shehata.ex3.client.gis.GISController
+import at.shehata.ex3.client.gis.GISModel
+import at.shehata.ex3.client.gis.GISView
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.stage.Stage
@@ -31,7 +30,7 @@ class GISApplication : Application() {
          * Initial size of the Scene
          */
         const val SCENE_HEIGHT = 480.0 * 1.205
-        const val SCENE_WIDTH = 640.0
+        const val SCENE_WIDTH = 740.0
     }
 
     /**
