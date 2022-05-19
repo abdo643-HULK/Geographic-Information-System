@@ -191,53 +191,56 @@ class GISController(
             }
         }
 
+
         private fun mousePressedHandler(_event: MouseEvent) {
             val x = _event.x.toInt()
             val y = _event.y.toInt()
+
             mDeltaDrag.setLocation(x, y)
             mStartPoint.setLocation(x, y)
-            mOverlayRect.setLocation(x, y)
+            mOverlayRect.setRect(x.toDouble(), y.toDouble(), 1.0, 1.0)
 
-            if (_event.button == MouseButton.SECONDARY) mView.saveContext()
-
-            Toolkit.getDefaultToolkit().systemClipboard.apply {
-                val data = mModel.getMapPoint(Point(x, y)).let { "(${it.x},${it.y})\n" }
-                if (_event.isControlDown) {
-                    val oldData = getContents(this@MouseHandler).getTransferData(DataFlavor.stringFlavor) as String
-                    setContents(StringSelection(oldData + data), mOwner)
-                    return
-                }
-                val selection = StringSelection(data)
-                setContents(selection, mOwner)
+            when (_event.button) {
+                MouseButton.SECONDARY -> mView.saveContext()
+                MouseButton.PRIMARY -> saveToClipboard(_event)
+                else -> return
             }
-
         }
 
         private fun mouseDraggedHandler(_event: MouseEvent) {
-            when (_event.button) {
+            mView.cursor = when (_event.button) {
                 MouseButton.PRIMARY -> {
-                    mView.cursor = Cursor.CROSSHAIR
-                    val width = _event.x.toInt() - mStartPoint.x
-                    val height = _event.y.toInt() - mStartPoint.y
-                    mOverlayRect.setSize(width, height)
-                    mView.drawXOR(mOverlayRect)
+                    val deltaX = _event.x.toInt() - mStartPoint.x
+                    val deltaY = _event.y.toInt() - mStartPoint.y
+                    when {
+                        deltaX == 0 && deltaY == 0 -> Cursor.DEFAULT
+                        else -> {
+                            setOverlay(_event, deltaX, deltaY)
+                            mView.drawXOR(mOverlayRect)
+
+                            Cursor.CROSSHAIR
+                        }
+                    }
                 }
-                else -> {
-                    mView.cursor = Cursor.OPEN_HAND
+                MouseButton.SECONDARY -> {
                     val dx = _event.x - mDeltaDrag.x.toDouble()
                     val dy = _event.y - mDeltaDrag.y.toDouble()
                     mDeltaDrag.setLocation(_event.x, _event.y)
                     mView.translate(dx, dy)
+
+                    Cursor.MOVE
                 }
+                else -> Cursor.DEFAULT
             }
         }
 
         private fun mouseReleaseHandler(_event: MouseEvent) {
             val deltaX = _event.x.toInt() - mStartPoint.x
             val deltaY = _event.y.toInt() - mStartPoint.y
+
             when (_event.button) {
                 MouseButton.PRIMARY -> {
-                    if (deltaX <= 0 || deltaY <= 0) return
+                    if (deltaX == 0 || deltaY == 0) return
                     mView.clearXOR()
                     mScope.launch { mModel.zoomRectNonBlock(Rectangle(mStartPoint.x, mStartPoint.y, deltaX, deltaY)) }
                 }
@@ -247,9 +250,37 @@ class GISController(
                     mView.restoreContext()
                     mModel.repaint()
                 }
-                else -> return
+                else -> Unit
             }
             mView.cursor = Cursor.DEFAULT
+        }
+
+        private fun setOverlay(_event: MouseEvent, _deltaX: Int, _deltaY: Int) {
+            val (x, width) = when {
+                _deltaX < 0 -> _event.x to mStartPoint.x - _event.x
+                _deltaX > 0 -> mStartPoint.x.toDouble() to _deltaX.toDouble()
+                else -> return
+            }
+
+            val (y, height) = when {
+                _deltaY < 0 -> _event.y to mStartPoint.y - _event.y
+                _deltaY > 0 -> mStartPoint.y.toDouble() to _deltaY.toDouble()
+                else -> return
+            }
+
+            mOverlayRect.setRect(x, y, width, height)
+        }
+
+        private fun saveToClipboard(_event: MouseEvent) {
+            Toolkit.getDefaultToolkit().systemClipboard.apply {
+                val data = mModel.getMapPoint(Point(_event.x.toInt(), _event.y.toInt())).let { "(${it.x},${it.y})\n" }
+                if (_event.isControlDown) {
+                    val oldData = getContents(this@MouseHandler).getTransferData(DataFlavor.stringFlavor) as String
+                    setContents(StringSelection(oldData + data), mOwner)
+                    return
+                }
+                setContents(StringSelection(data), mOwner)
+            }
         }
     }
 
@@ -277,10 +308,6 @@ class GISController(
                     is TextField -> mModel.zoomToScale((_event.source as TextField).text.toInt())
                     else -> return
                 }
-//                KeyCode.UP -> mModel.scrollVertical(20)
-//                KeyCode.DOWN -> mModel.scrollVertical(-20)
-//                KeyCode.LEFT -> mModel.scrollHorizontal(20)
-//                KeyCode.RIGHT -> mModel.scrollHorizontal(-20)
                 else -> return
             }
             mModel.repaint()
@@ -305,8 +332,8 @@ class GISController(
     inner class ScrollHandler : EventHandler<ScrollEvent> {
         override fun handle(_event: ScrollEvent) {
             val pt = Point(_event.x.toInt(), _event.y.toInt())
-            if (_event.deltaY < 0) return mModel.zoom(pt, 1.1)
-            mModel.zoom(pt, 1 / 1.1)
+            val factor = if (_event.deltaY > 0) 1.2 else 1 / 1.2
+            mModel.zoom(pt, factor)
         }
     }
 

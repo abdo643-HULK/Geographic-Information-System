@@ -68,7 +68,7 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
         val overlay = scene.lookup("#${GISApplication.OVERLAY_ID}") as Canvas
         overlay.graphicsContext2D.apply {
             clearRect(0.0, 0.0, scene.width, scene.height)
-            stroke = Color.ALICEBLUE
+            stroke = Color.AZURE
             lineWidth = 2.0
             strokeRect(_rect.minX, _rect.minY, _rect.width, _rect.height)
         }
