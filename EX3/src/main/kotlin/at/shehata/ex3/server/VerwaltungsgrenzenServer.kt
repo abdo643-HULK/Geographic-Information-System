@@ -62,14 +62,14 @@ class VerwaltungsgrenzenServer {
                             val wkt = geom.toString()
                             val poly = org.postgis.Polygon(wkt)
                             if (poly.numRings() < 1) continue
-                            data += GeoObject(id, type, convertPolygon(poly))
+//                            data += GeoObject(id, type, convertPolygon(poly))
                         }
                         Geometry.MULTIPOLYGON -> {
                             val wkt = geom.toString()
                             val multiPoly = org.postgis.MultiPolygon(wkt)
                             multiPoly.polygons.forEach {
                                 if (it.numRings() < 1) return@forEach
-                                data += GeoObject(id, type, convertPolygon(it))
+//                                data += GeoObject(id, type, convertPolygon(it))
                             }
                         }
                         Geometry.POINT -> {}
@@ -117,7 +117,7 @@ class VerwaltungsgrenzenServer {
                                     }
                                     list += Polygon(xPoints, yPoints, xPoints.size)
                                 }
-                                data += GeoObject(id, type, list)
+//                                data += GeoObject(id, type, list)
                             }
                         }
 //                        else -> continue

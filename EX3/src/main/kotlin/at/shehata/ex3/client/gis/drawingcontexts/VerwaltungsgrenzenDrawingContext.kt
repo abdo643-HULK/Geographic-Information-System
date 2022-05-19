@@ -10,7 +10,7 @@ private const val CAPACITY = 1
 class VerwaltungsgrenzenDrawingContext : ADrawingContext(Hashtable(CAPACITY)) {
     override fun initSchemata() {
         mContext.apply {
-            put(8002, PresentationSchema(Color.WHITE, Color.BLACK))
+            put(8002, PresentationSchema(Color.DARK_GRAY, Color.BLACK))
         }
     }
 }

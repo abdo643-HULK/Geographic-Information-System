@@ -143,7 +143,7 @@ class GISController(
                     false -> {
                         btn.text = "Disable Sticky"
                         mScope.launch {
-                            mModel.toggleSticky()
+                            mModel.loadAreaData()
                             mModel.repaint()
                         }
 
@@ -198,8 +198,10 @@ class GISController(
             mStartPoint.setLocation(x, y)
             mOverlayRect.setLocation(x, y)
 
+            if (_event.button == MouseButton.SECONDARY) mView.saveContext()
+
             Toolkit.getDefaultToolkit().systemClipboard.apply {
-                val data = "($x,$y)\n"
+                val data = mModel.getMapPoint(Point(x, y)).let { "(${it.x},${it.y})\n" }
                 if (_event.isControlDown) {
                     val oldData = getContents(this@MouseHandler).getTransferData(DataFlavor.stringFlavor) as String
                     setContents(StringSelection(oldData + data), mOwner)
@@ -237,11 +239,12 @@ class GISController(
                 MouseButton.PRIMARY -> {
                     if (deltaX <= 0 || deltaY <= 0) return
                     mView.clearXOR()
-                    mScope.launch { mModel.zoomToNonBlock(Rectangle(mStartPoint.x, mStartPoint.y, deltaX, deltaY)) }
+                    mScope.launch { mModel.zoomRectNonBlock(Rectangle(mStartPoint.x, mStartPoint.y, deltaX, deltaY)) }
                 }
                 MouseButton.SECONDARY -> {
                     mModel.scrollHorizontal(deltaX)
                     mModel.scrollVertical(deltaY)
+                    mView.restoreContext()
                     mModel.repaint()
                 }
                 else -> return

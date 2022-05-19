@@ -7,7 +7,6 @@ import java.util.Hashtable
 abstract class ADrawingContext(
     protected val mContext: Hashtable<Int, PresentationSchema> = Hashtable()
 ) {
-
     init {
         initSchemata()
     }

@@ -26,8 +26,6 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
         const val SCALE_FIELD_ID = "scale-field"
     }
 
-    private var mStartDrag = false
-
     /**
      * The image to render on the canvas
      */
@@ -61,8 +59,6 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
         val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
 
         canvas.graphicsContext2D.apply {
-            restore()
-            mStartDrag = false
             clearRect(0.0, 0.0, canvas.width, canvas.height)
             drawImage(writable, 0.0, 0.0)
         }
@@ -85,9 +81,18 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
         }
     }
 
+    fun saveContext() {
+        val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+        canvas.graphicsContext2D.save()
+    }
+
+    fun restoreContext() {
+        val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+        canvas.graphicsContext2D.restore()
+    }
+
     fun translate(_dX: Double, _dY: Double) {
         val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
-        // clean up bitblt errors ...
         val width = canvas.width
         val height = canvas.height
         val delta = 2.0
@@ -95,12 +100,8 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
         canvas.graphicsContext2D.apply {
             clearRect(0.0, delta, width, height) // top
             clearRect(0.0, height - delta, width, height) // bottom
-            if (!mStartDrag) {
-                mStartDrag = true
-                save()
-            }
-
             translate(_dX, _dY)
+
             val writable = SwingFXUtils.toFXImage(mImage, null)
             drawImage(writable, 0.0, 0.0)
         }
