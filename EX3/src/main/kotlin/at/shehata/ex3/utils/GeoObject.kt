@@ -7,6 +7,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import java.awt.Polygon
+import java.awt.Rectangle
 
 @Serializable
 private data class Poly(val mXpoints: IntArray, val mYpoints: IntArray, val mNpoints: Int)
@@ -89,6 +90,18 @@ open class GeoObject(
 	 * @return die Bounding Box der Geometrie als Rechteckobjekt
 	 * @see java.awt.Rectangle
 	 */
+
+	@get:JvmName("getBounds")
+	val mBounds
+		@Throws(Error::class)
+		get() = mObjects.mapNotNull {
+			when (it) {
+				is Area -> it.mGeometry.bounds
+				is Line -> null//it.mGeometry.bounds
+				is Point -> Rectangle(it.mGeometry.x, it.mGeometry.y, 1, 1)
+				else -> null
+			}
+		}
 //    fun getBounds(): Rectangle = mPoly.bounds
 
 	override fun toString(): String =

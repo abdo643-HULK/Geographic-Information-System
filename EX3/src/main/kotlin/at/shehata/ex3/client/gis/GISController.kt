@@ -35,290 +35,306 @@ import kotlin.math.PI
  * @param mModel The model that contains the business logic
  */
 class GISController(
-    private val mModel: GISModel,
+	private val mModel: GISModel,
 ) {
-    /**
-     * coroutine for the controller
-     */
-    private val mScope = CoroutineScope(Dispatchers.Default)
+	/**
+	 * coroutine for the controller
+	 */
+	private val mScope = CoroutineScope(Dispatchers.Default)
 
-    /// the singletons of the different handlers
-    private val mActionHandler by lazy { ActionHandler() }
-    private val mChangeHandler by lazy { ChangeHandler() }
-    private val mMouseHandler by lazy { MouseHandler() }
-    private val mKeyHandler by lazy { KeyHandler() }
-    private val mScrollHandler by lazy { ScrollHandler() }
+	/// the singletons of the different handlers
+	private val mActionHandler by lazy { ActionHandler() }
+	private val mChangeHandler by lazy { ChangeHandler() }
+	private val mMouseHandler by lazy { MouseHandler() }
+	private val mKeyHandler by lazy { KeyHandler() }
+	private val mScrollHandler by lazy { ScrollHandler() }
 
-    lateinit var mView: GISView
+	lateinit var mView: GISView
 
-    /**
-     * Returns the Singleton of the ActionHandler
-     *
-     * @return The ActionHandler
-     * @see ActionHandler
-     */
-    fun getActionHandler() = mActionHandler
+	/**
+	 * Returns the Singleton of the ActionHandler
+	 *
+	 * @return The ActionHandler
+	 * @see ActionHandler
+	 */
+	fun getActionHandler() = mActionHandler
 
-    /**
-     * Returns the Singleton of the MouseHandler
-     *
-     * @return The MouseHandler
-     * @see MouseHandler
-     */
-    fun getMouseHandler() = mMouseHandler
+	/**
+	 * Returns the Singleton of the MouseHandler
+	 *
+	 * @return The MouseHandler
+	 * @see MouseHandler
+	 */
+	fun getMouseHandler() = mMouseHandler
 
-    /**
-     * Returns the Singleton of the ChangeHandler
-     *
-     * @return The ChangeHandler
-     * @see ChangeHandler
-     */
-    fun getChangeHandler() = mChangeHandler
+	/**
+	 * Returns the Singleton of the ChangeHandler
+	 *
+	 * @return The ChangeHandler
+	 * @see ChangeHandler
+	 */
+	fun getChangeHandler() = mChangeHandler
 
-    /**
-     * Returns the Singleton of the KeyHandler
-     *
-     * @return The KeyHandler
-     * @see KeyHandler
-     */
-    fun getKeyHandler() = mKeyHandler
+	/**
+	 * Returns the Singleton of the KeyHandler
+	 *
+	 * @return The KeyHandler
+	 * @see KeyHandler
+	 */
+	fun getKeyHandler() = mKeyHandler
 
-    fun getScrollHandler() = mScrollHandler
+	fun getScrollHandler() = mScrollHandler
 
 
-    /**
-     * handler for the button
-     * calls the model to generate a house on a random position
-     */
-    inner class ActionHandler : EventHandler<ActionEvent> {
-        private var mIsPOIOn = false
-        private var mIsSticky = false
+	/**
+	 * handler for the button
+	 * calls the model to generate a house on a random position
+	 */
+	inner class ActionHandler : EventHandler<ActionEvent> {
+		private var mIsPOIOn = false
+		private var mIsSticky = false
 
-        @Suppress("MagicNumber")
-        override fun handle(_event: ActionEvent): Unit = when (ButtonActions.valueOf((_event.source as Button).id)) {
-            ButtonActions.SAVE -> saveToFile()
-            ButtonActions.ZOOM_IN -> mModel.zoom(1.3)
-            ButtonActions.ZOOM_OUT -> mModel.zoom(1 / 1.3)
-            ButtonActions.SCROLL_UP -> mModel.scrollVertical(20)
-            ButtonActions.SCROLL_DOWN -> mModel.scrollVertical(-20)
-            ButtonActions.SCROLL_LEFT -> mModel.scrollHorizontal(20)
-            ButtonActions.SCROLL_RIGHT -> mModel.scrollHorizontal(-20)
-            ButtonActions.ZOOM_TO_FIT -> {
-                mScope.launch { mModel.zoomToFitNonBlock() }
-                Unit
-            }
-            ButtonActions.DRAW -> {
-                mScope.launch {
-                    mModel.loadData()
-                    mModel.repaint()
-                }
-                Unit
-            }
-            ButtonActions.TOGGLE_POI -> {
-                when (mIsPOIOn) {
-                    true -> {
-                        (_event.source as Button).text = "Show POI"
-                        mModel.hidePOI()
-                    }
-                    false -> {
-                        (_event.source as Button).text = "Hide POI"
-                        mScope.launch {
-                            mModel.loadPOIData()
-                            mModel.repaint()
-                        }
-                    }
-                }
-                mIsPOIOn = !mIsPOIOn
-            }
-            ButtonActions.STICKY -> {
-                val btn = (_event.source as Button)
-                when (mIsSticky) {
-                    true -> {
-                        btn.text = "Sticky"
-                        mScope.launch {
-                            mModel.loadData()
-                            mModel.repaint()
-                        }
-                    }
-                    false -> {
-                        btn.text = "Disable Sticky"
-                        mScope.launch {
-                            mModel.loadAreaData()
-                            mModel.repaint()
-                        }
+		@Suppress("MagicNumber")
+		override fun handle(_event: ActionEvent): Unit = when (ButtonActions.valueOf((_event.source as Button).id)) {
+			ButtonActions.SAVE -> saveToFile()
+			ButtonActions.ZOOM_IN -> mModel.zoom(1.3)
+			ButtonActions.ZOOM_OUT -> mModel.zoom(1 / 1.3)
+			ButtonActions.SCROLL_UP -> {
+				mScope.launch { mModel.scrollVerticalNonBlocking(20) }
+				Unit
+			}
+			ButtonActions.SCROLL_DOWN -> {
+				mScope.launch { mModel.scrollVerticalNonBlocking(-20) }
+				Unit
+			}
+			ButtonActions.SCROLL_LEFT -> {
+				mScope.launch { mModel.scrollHorizontalNonBlocking(20) }
+				Unit
+			}
+			ButtonActions.SCROLL_RIGHT -> {
+				mScope.launch { mModel.scrollHorizontalNonBlocking(-20) }
+				Unit
+			}
+			ButtonActions.ZOOM_TO_FIT -> {
+				mScope.launch { mModel.zoomToFitNonBlock() }
+				Unit
+			}
+			ButtonActions.DRAW -> {
+				mScope.launch {
+					mModel.loadData()
+					mModel.repaint()
+				}
+				Unit
+			}
+			ButtonActions.TOGGLE_POI -> {
+				when (mIsPOIOn) {
+					true -> {
+						(_event.source as Button).text = "Show POI"
+						mScope.launch {
+							mModel.hidePOI()
+						}
+					}
+					false -> {
+						(_event.source as Button).text = "Hide POI"
+						mScope.launch {
+							mModel.loadPOIData()
+							mModel.repaint()
+						}
+					}
+				}
+				mIsPOIOn = !mIsPOIOn
+			}
+			ButtonActions.STICKY -> {
+				val btn = (_event.source as Button)
+				when (mIsSticky) {
+					true -> {
+						btn.text = "Sticky"
+						mScope.launch {
+							mModel.loadData()
+							mModel.repaint()
+						}
+					}
+					false -> {
+						btn.text = "Disable Sticky"
+						mScope.launch {
+							mModel.loadAreaData()
+							mModel.repaint()
+						}
 
-                    }
-                }
-                mIsSticky = !mIsSticky
-            }
-        }
+					}
+				}
+				mIsSticky = !mIsSticky
+			}
+		}
 
-        private fun saveToFile() {
-            FileChooser().apply {
-                title = "Save"
-                extensionFilters += FileChooser.ExtensionFilter("PNG", "*.png")
-                var file = showSaveDialog(mView.scene.window) ?: return@apply
-                file = if (!file.endsWith(".png")) File(file.absolutePath + ".png") else file
-                try {
-                    val canvas = mView.lookup("#${GISApplication.CANVAS_ID}") as Canvas
-                    val writableImage = WritableImage(canvas.width.toInt(), canvas.height.toInt())
-                    canvas.snapshot(null, writableImage)
-                    val renderedImage = SwingFXUtils.fromFXImage(writableImage, null)
-                    ImageIO.write(renderedImage, "png", file)
-                } catch (_e: IOException) {
-                    _e.printStackTrace()
-                }
-            }
-        }
-    }
+		private fun saveToFile() {
+			FileChooser().apply {
+				title = "Save"
+				extensionFilters += FileChooser.ExtensionFilter("PNG", "*.png")
+				var file = showSaveDialog(mView.scene.window) ?: return@apply
+				file = if (!file.endsWith(".png")) File(file.absolutePath + ".png") else file
+				try {
+					val canvas = mView.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+					val writableImage = WritableImage(canvas.width.toInt(), canvas.height.toInt())
+					canvas.snapshot(null, writableImage)
+					val renderedImage = SwingFXUtils.fromFXImage(writableImage, null)
+					ImageIO.write(renderedImage, "png", file)
+				} catch (_e: IOException) {
+					_e.printStackTrace()
+				}
+			}
+		}
+	}
 
-    /**
-     * handler for mouse clicks on the canvas
-     * calls the model to render a house on the position off the click
-     */
-    inner class MouseHandler : EventHandler<MouseEvent> {
-        private val mDeltaDrag = Point()
-        private val mStartPoint = Point()
-        private val mOverlayRect = Rectangle()
+	/**
+	 * handler for mouse clicks on the canvas
+	 * calls the model to render a house on the position off the click
+	 */
+	inner class MouseHandler : EventHandler<MouseEvent> {
+		private val mDeltaDrag = Point()
+		private val mStartPoint = Point()
+		private val mOverlayRect = Rectangle()
 
-        private val mOwner = StringSelection("GIS")
+		private val mOwner = StringSelection("GIS")
 
-        override fun handle(_event: MouseEvent) {
-            when (_event.eventType) {
-                MouseEvent.MOUSE_PRESSED -> mousePressedHandler(_event)
-                MouseEvent.MOUSE_DRAGGED -> mouseDraggedHandler(_event)
-                MouseEvent.MOUSE_RELEASED -> mouseReleaseHandler(_event)
-            }
-        }
+		override fun handle(_event: MouseEvent) {
+			when (_event.eventType) {
+				MouseEvent.MOUSE_PRESSED -> mousePressedHandler(_event)
+				MouseEvent.MOUSE_DRAGGED -> mouseDraggedHandler(_event)
+				MouseEvent.MOUSE_RELEASED -> mouseReleaseHandler(_event)
+			}
+		}
 
-        private fun mousePressedHandler(_event: MouseEvent) {
-            val x = _event.x.toInt()
-            val y = _event.y.toInt()
-            mDeltaDrag.setLocation(x, y)
-            mStartPoint.setLocation(x, y)
-            mOverlayRect.setLocation(x, y)
+		private fun mousePressedHandler(_event: MouseEvent) {
+			val x = _event.x.toInt()
+			val y = _event.y.toInt()
+			mDeltaDrag.setLocation(x, y)
+			mStartPoint.setLocation(x, y)
+			mOverlayRect.setLocation(x, y)
 
-            if (_event.button == MouseButton.SECONDARY) mView.saveContext()
+			if (_event.button == MouseButton.SECONDARY) mView.saveContext()
 
-            Toolkit.getDefaultToolkit().systemClipboard.apply {
-                val data = mModel.getMapPoint(Point(x, y)).let { "(${it.x},${it.y})\n" }
-                if (_event.isControlDown) {
-                    val oldData = getContents(this@MouseHandler).getTransferData(DataFlavor.stringFlavor) as String
-                    setContents(StringSelection(oldData + data), mOwner)
-                    return
-                }
-                val selection = StringSelection(data)
-                setContents(selection, mOwner)
-            }
+			Toolkit.getDefaultToolkit().systemClipboard.apply {
+				val data = mModel.getMapPoint(Point(x, y)).let { "(${it.x},${it.y})\n" }
+				if (_event.isControlDown) {
+					val oldData = getContents(this@MouseHandler)
+						.getTransferData(DataFlavor.stringFlavor) as String
+					setContents(StringSelection(oldData + data), mOwner)
+					return
+				}
+				val selection = StringSelection(data)
+				setContents(selection, mOwner)
+			}
 
-        }
+		}
 
-        private fun mouseDraggedHandler(_event: MouseEvent) {
-            when (_event.button) {
-                MouseButton.PRIMARY -> {
-                    mView.cursor = Cursor.CROSSHAIR
-                    val width = _event.x.toInt() - mStartPoint.x
-                    val height = _event.y.toInt() - mStartPoint.y
-                    mOverlayRect.setSize(width, height)
-                    mView.drawXOR(mOverlayRect)
-                }
-                else -> {
-                    mView.cursor = Cursor.OPEN_HAND
-                    val dx = _event.x - mDeltaDrag.x.toDouble()
-                    val dy = _event.y - mDeltaDrag.y.toDouble()
-                    mDeltaDrag.setLocation(_event.x, _event.y)
-                    mView.translate(dx, dy)
-                }
-            }
-        }
+		private fun mouseDraggedHandler(_event: MouseEvent) {
+			when (_event.button) {
+				MouseButton.PRIMARY -> {
+					mView.cursor = Cursor.CROSSHAIR
+					val width = _event.x.toInt() - mStartPoint.x
+					val height = _event.y.toInt() - mStartPoint.y
+					mOverlayRect.setSize(width, height)
+					mView.drawXOR(mOverlayRect)
+				}
+				else -> {
+					mView.cursor = Cursor.OPEN_HAND
+					val dx = _event.x - mDeltaDrag.x.toDouble()
+					val dy = _event.y - mDeltaDrag.y.toDouble()
+					mDeltaDrag.setLocation(_event.x, _event.y)
+					mView.translate(dx, dy)
+				}
+			}
+		}
 
-        private fun mouseReleaseHandler(_event: MouseEvent) {
-            val deltaX = _event.x.toInt() - mStartPoint.x
-            val deltaY = _event.y.toInt() - mStartPoint.y
-            when (_event.button) {
-                MouseButton.PRIMARY -> {
-                    if (deltaX <= 0 || deltaY <= 0) return
-                    mView.clearXOR()
-                    mScope.launch { mModel.zoomRectNonBlock(Rectangle(mStartPoint.x, mStartPoint.y, deltaX, deltaY)) }
-                }
-                MouseButton.SECONDARY -> {
-                    mModel.scrollHorizontal(deltaX)
-                    mModel.scrollVertical(deltaY)
-                    mView.restoreContext()
-                    mModel.repaint()
-                }
-                else -> return
-            }
-            mView.cursor = Cursor.DEFAULT
-        }
-    }
+		private fun mouseReleaseHandler(_event: MouseEvent) {
+			val deltaX = _event.x.toInt() - mStartPoint.x
+			val deltaY = _event.y.toInt() - mStartPoint.y
+			when (_event.button) {
+				MouseButton.PRIMARY -> {
+					if (deltaX <= 0 || deltaY <= 0) return
+					mView.clearXOR()
+					mScope.launch { mModel.zoomRectNonBlock(Rectangle(mStartPoint.x, mStartPoint.y, deltaX, deltaY)) }
+				}
+				MouseButton.SECONDARY -> {
+					mModel.scrollHorizontal(deltaX)
+					mModel.scrollVertical(deltaY)
+					mView.restoreContext()
+					mScope.launch { mModel.repaint() }
+				}
+				else -> return
+			}
+			mView.cursor = Cursor.DEFAULT
+		}
+	}
 
-    /**
-     * Handler for the Keyboard Keys
-     * It translates and rotates when the correct Key is clicked
-     */
-    inner class KeyHandler : EventHandler<KeyEvent> {
-        override fun handle(_event: KeyEvent) {
-            when (_event.eventType) {
-                KeyEvent.KEY_RELEASED -> handleKeyReleased(_event)
-                KeyEvent.KEY_PRESSED -> handleKeyPress(_event.code)
-            }
-        }
+	/**
+	 * Handler for the Keyboard Keys
+	 * It translates and rotates when the correct Key is clicked
+	 */
+	inner class KeyHandler : EventHandler<KeyEvent> {
+		override fun handle(_event: KeyEvent) {
+			when (_event.eventType) {
+				KeyEvent.KEY_RELEASED -> handleKeyReleased(_event)
+				KeyEvent.KEY_PRESSED -> handleKeyPress(_event.code)
+			}
+		}
 
-        /**
-         * helper function for Key_Released
-         * Handles Scrolling, when LEFT, DOWN, RIGHT or UP is clicked
-         * Handles Rotating, when R is clicked
-         */
-        private fun handleKeyReleased(_event: KeyEvent) {
-            when (_event.code) {
-                KeyCode.R -> if (_event.isShiftDown) mModel.rotate(-PI / 2) else mModel.rotate(PI / 2)
-                KeyCode.ENTER -> when (_event.source) {
-                    is TextField -> mModel.zoomToScale((_event.source as TextField).text.toInt())
-                    else -> return
-                }
+		/**
+		 * helper function for Key_Released
+		 * Handles Scrolling, when LEFT, DOWN, RIGHT or UP is clicked
+		 * Handles Rotating, when R is clicked
+		 */
+		private fun handleKeyReleased(_event: KeyEvent) {
+			when (_event.code) {
+				KeyCode.R -> if (_event.isShiftDown) mModel.rotate(-PI / 2) else mModel.rotate(PI / 2)
+				KeyCode.ENTER -> when (_event.source) {
+					is TextField -> mModel.zoomToScale((_event.source as TextField).text.toInt())
+					else -> return
+				}
 //                KeyCode.UP -> mModel.scrollVertical(20)
 //                KeyCode.DOWN -> mModel.scrollVertical(-20)
 //                KeyCode.LEFT -> mModel.scrollHorizontal(20)
 //                KeyCode.RIGHT -> mModel.scrollHorizontal(-20)
-                else -> return
-            }
-            mModel.repaint()
-        }
+				else -> return
+			}
+			mScope.launch { mModel.repaint() }
+		}
 
-        /**
-         * helper function for Key_Press
-         * Handles Scrolling, when A, S, D or W is clicked
-         */
-        private fun handleKeyPress(_eventCode: KeyCode) {
-            when (_eventCode) {
-                KeyCode.W -> mModel.scrollVertical(20)
-                KeyCode.S -> mModel.scrollVertical(-20)
-                KeyCode.A -> mModel.scrollHorizontal(20)
-                KeyCode.D -> mModel.scrollHorizontal(-20)
-                else -> return
-            }
-            mModel.repaint()
-        }
-    }
+		/**
+		 * helper function for Key_Press
+		 * Handles Scrolling, when A, S, D or W is clicked
+		 */
+		private fun handleKeyPress(_eventCode: KeyCode) {
+			when (_eventCode) {
+				KeyCode.W -> mModel.scrollVertical(20)
+				KeyCode.S -> mModel.scrollVertical(-20)
+				KeyCode.A -> mModel.scrollHorizontal(20)
+				KeyCode.D -> mModel.scrollHorizontal(-20)
+				else -> return
+			}
+			mScope.launch { mModel.repaint() }
+		}
+	}
 
-    inner class ScrollHandler : EventHandler<ScrollEvent> {
-        override fun handle(_event: ScrollEvent) {
-            val pt = Point(_event.x.toInt(), _event.y.toInt())
-            if (_event.deltaY < 0) return mModel.zoom(pt, 1.1)
-            mModel.zoom(pt, 1 / 1.1)
-        }
-    }
+	inner class ScrollHandler : EventHandler<ScrollEvent> {
+		override fun handle(_event: ScrollEvent) {
+			val pt = Point(_event.x.toInt(), _event.y.toInt())
+			if (_event.deltaY < 0) mModel.zoom(pt, 1.1) else mModel.zoom(pt, 1 / 1.1)
+			mScope.launch { mModel.repaint() }
+		}
+	}
 
-    /**
-     * handler that listens for resizes of the canvas
-     */
-    inner class ChangeHandler : ChangeListener<Number> {
-        override fun changed(_observable: ObservableValue<out Number>, _oldValue: Number, _newValue: Number) {
-            when ((_observable as ReadOnlyDoubleProperty).name) {
-                "width" -> mModel.setWidth(_newValue.toInt())
-                "height" -> mModel.setHeight(_newValue.toInt())
-            }
-        }
-    }
+	/**
+	 * handler that listens for resizes of the canvas
+	 */
+	inner class ChangeHandler : ChangeListener<Number> {
+		override fun changed(_observable: ObservableValue<out Number>, _oldValue: Number, _newValue: Number) {
+			when ((_observable as ReadOnlyDoubleProperty).name) {
+				"width" -> mModel.setWidth(_newValue.toInt())
+				"height" -> mModel.setHeight(_newValue.toInt())
+			}
+			mScope.launch { mModel.repaint() }
+		}
+	}
 }

@@ -10,15 +10,15 @@ import java.awt.geom.Area as AwtArea
 data class PresentationSchema(
 	private val mFillColor: Color,
 	private val mLineColor: Color,
-	private val mLineWidth: Float = 1.0f
+	private val mLineWidth: Float = 1f
 ) {
 	fun paint(_g: Graphics2D, _obj: GeoObject, _m: Matrix) {
-		_g.color = mFillColor
 		val area = AwtArea()
-		_obj.mObjects.forEach { it.draw(_g, _m, area) }
-		_g.fill(area)
 		_g.color = mLineColor
+		_obj.mObjects.forEach { it.draw(_g, _m, area) }
 		_g.stroke = BasicStroke(mLineWidth)
 		_g.draw(area)
+		_g.color = mFillColor
+		_g.fill(area)
 	}
 }

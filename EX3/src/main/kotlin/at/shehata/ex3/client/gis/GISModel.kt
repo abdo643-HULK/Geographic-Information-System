@@ -5,7 +5,10 @@ import at.shehata.ex3.server.OSMServer
 import at.shehata.ex3.utils.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.awt.*
+import java.awt.Color
+import java.awt.Graphics2D
+import java.awt.Image
+import java.awt.Rectangle
 import java.awt.geom.Point2D
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
@@ -107,9 +110,10 @@ open class GISModel {
 	suspend fun loadAreaData() = withContext(Dispatchers.Default) {
 		mData.clear()
 		mData += OSMServer().getArea(mWorldMatrix.inverse() * Rectangle(0, 0, mWidth, mHeight))
+		println(mData.toTypedArray().contentToString())
 	}
 
-	fun hidePOI() {
+	suspend fun hidePOI() {
 		mImage = initCanvas()
 		mPOIData.clear()
 		repaint()
@@ -119,7 +123,7 @@ open class GISModel {
 	 * Paints the polygons onto the Image and
 	 * calls the observers.
 	 */
-	fun repaint() {
+	suspend fun repaint() = withContext(Dispatchers.Default) {
 //        val context = DummyGIS().getDrawingContext()
 //        val context = VerwaltungsgrenzenServer().getDrawingContext()
 		val context = OSMServer().drawingContext
@@ -139,7 +143,10 @@ open class GISModel {
 				graphics.drawImage(mPOIsImage, pos.x, pos.y, null)
 			}
 		}
-		update(mImage)
+
+		withContext(Dispatchers.Main) {
+			update(mImage)
+		}
 	}
 
 	/**
@@ -187,11 +194,11 @@ open class GISModel {
 	fun zoom(_pt: AwtPoint, _factor: Double) {
 		mImage = initCanvas()
 		mWorldMatrix = Matrix.zoomPoint(mWorldMatrix, _pt, _factor)
-		repaint()
 	}
 
 	suspend fun zoomNonBlock(_pt: AwtPoint, _factor: Double) = withContext(Dispatchers.Default) {
 		zoom(_pt, _factor)
+		repaint()
 	}
 
 	/**
@@ -203,11 +210,11 @@ open class GISModel {
 	fun zoom(_factor: Double) {
 		mImage = initCanvas()
 		mWorldMatrix = Matrix.zoomPoint(mWorldMatrix, AwtPoint(mWidth / 2, mHeight / 2), _factor)
-		repaint()
 	}
 
 	suspend fun zoomNonBlock(_factor: Double) = withContext(Dispatchers.Default) {
 		zoom(_factor)
+		repaint()
 	}
 
 	/**
@@ -218,21 +225,14 @@ open class GISModel {
 	fun zoomToFit() {
 		mImage = initCanvas()
 		mWorldMatrix = Matrix.zoomToFit(
-			getMapBounds(mData.map {
-				it.mObjects.mapNotNull {
-					when (it) {
-						is Area -> it.mGeometry
-						else -> null
-					}
-				}
-			}),
+			getMapBounds(mData),
 			Rectangle(0, 0, mWidth, mHeight)
 		)
-		repaint()
 	}
 
 	suspend fun zoomToFitNonBlock() = withContext(Dispatchers.Default) {
 		zoomToFit()
+		repaint()
 	}
 
 	/**
@@ -246,11 +246,11 @@ open class GISModel {
 	fun zoomRect(_mapBounds: Rectangle) {
 		mImage = initCanvas()
 		mWorldMatrix = Matrix.zoomToFit(mWorldMatrix.inverse() * _mapBounds, Rectangle(0, 0, mWidth, mHeight))
-		repaint()
 	}
 
 	suspend fun zoomRectNonBlock(_mapBounds: Rectangle) = withContext(Dispatchers.Default) {
 		zoomRect(_mapBounds)
+		repaint()
 	}
 
 	/**
@@ -271,12 +271,11 @@ open class GISModel {
 			AwtPoint(mWidth / 2, mHeight / 2),
 			calculateScale() / _scale.toDouble()
 		)
-
-		repaint()
 	}
 
 	suspend fun zoomToScaleNonBlock(_scale: Int) = withContext(Dispatchers.Default) {
 		zoomToScale(_scale)
+		repaint()
 	}
 
 	/**
@@ -292,6 +291,7 @@ open class GISModel {
 
 	suspend fun scrollHorizontalNonBlocking(_delta: Int) = withContext(Dispatchers.Default) {
 		scrollHorizontal(_delta)
+		repaint()
 	}
 
 	/**
@@ -307,6 +307,7 @@ open class GISModel {
 
 	suspend fun scrollVerticalNonBlocking(_delta: Int) = withContext(Dispatchers.Default) {
 		scrollVertical(_delta)
+		repaint()
 	}
 
 	fun rotate(_alpha: Double) {
@@ -317,6 +318,10 @@ open class GISModel {
 				Matrix.rotate(_alpha) *
 				Matrix.translate(-centerX, -centerY) *
 				mWorldMatrix
+	}
+
+	suspend fun rotateNonBlocking(_alpha: Double) = withContext(Dispatchers.Default) {
+		rotate(_alpha)
 		repaint()
 	}
 
@@ -324,26 +329,30 @@ open class GISModel {
 	/**
 	 * Ermittelt die gemeinsame BoundingBox der übergebenen Polygone
 	 *
-	 * @param _poly Die Polygone, für die die BoundingBox berechnet
+	 * @param _geoObj Die Polygone, für die die BoundingBox berechnet
 	 * werden soll
 	 * @return Die BoundingBox
 	 */
-	fun getMapBounds(_poly: List<List<Polygon>>): Rectangle {
-		if (_poly.isEmpty()) return Rectangle(0, 0, mWidth, mHeight)
-		val boundingBox = Rectangle(_poly[0][0].bounds).apply {
-			_poly[0].drop(1).forEach { add(it.bounds) }
-		}
-
-		for (i in (1 until _poly.size)) {
-			_poly[i].forEach {
-				boundingBox.add(it.bounds)
+	fun getMapBounds(_geoObj: List<GeoObject>): Rectangle {
+		if (_geoObj.isEmpty()) return Rectangle(0, 0, mWidth, mHeight)
+		val boundingBox = _geoObj[0].mBounds[0].apply {
+			_geoObj.drop(1).forEach { g ->
+				g.mBounds.forEach { add(it) }
 			}
 		}
+
+		_geoObj.forEach { g ->
+			g.mBounds.forEach { boundingBox.add(it) }
+		}
+
+//		for (i in (1 until _poly.size)) {
+//
+//		}
 
 		return boundingBox
 	}
 
-	suspend fun getMapBoundsNonBlocking(_poly: List<List<Polygon>>): Rectangle = withContext(Dispatchers.Default) {
+	suspend fun getMapBoundsNonBlocking(_poly: List<GeoObject>): Rectangle = withContext(Dispatchers.Default) {
 		getMapBounds(_poly)
 	}
 

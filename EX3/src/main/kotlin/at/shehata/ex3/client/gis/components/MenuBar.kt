@@ -5,6 +5,10 @@ import javafx.scene.control.MenuItem
 import javafx.scene.control.RadioMenuItem
 import javafx.scene.control.ToggleGroup
 
+enum class ServerMenuActions {
+    
+}
+
 /**
  * MenuBar component to separate view into smaller
  * pieces.

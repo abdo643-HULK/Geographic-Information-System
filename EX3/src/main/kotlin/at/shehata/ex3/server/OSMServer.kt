@@ -40,6 +40,10 @@ private const val LANDUSE_QUERY =
 			"WHERE osm_landuse.type " +
 			"IN (5001, 5002, 5003, 5004, 5005, 5006)"
 
+private const val HIGHWAY_QUERRY = "SELECT * FROM osm_highway " +
+		"WHERE osm_highway.type " +
+		"IN (1010, 1030)"
+
 private const val BUILDING_QUERY = "SELECT * FROM osm_building"
 
 class OSMServer {
@@ -81,7 +85,7 @@ class OSMServer {
 				/* Create a statement and execute a select query. */
 				val stmt = (this as Connection).createStatement()
 
-				data += arrayOf(NATURAL_QUERY, LANDUSE_QUERY, BUILDING_QUERY).map { query ->
+				data += arrayOf(NATURAL_QUERY, LANDUSE_QUERY, HIGHWAY_QUERRY, BUILDING_QUERY).map { query ->
 					val result = stmt.executeQuery(query)
 					val data = mutableListOf<GeoObject>()
 					while (result.next()) {
@@ -166,36 +170,58 @@ class OSMServer {
 						"&& $envelope " +
 						"AND osm_landuse.type IN (5001, 5002, 5003, 5004, 5005, 5006)"
 
-				val third = "SELECT * FROM osm_building " +
+				val third = "SELECT * FROM osm_highway " +
+						"WHERE osm_highway.geom " +
+						"&& $envelope " +
+						"AND osm_landuse.type IN (1010, 1030)"
+
+				val fourth = "SELECT * FROM osm_building " +
 						"WHERE osm_building.geom " +
 						"&& $envelope"
 
-				data += arrayOf(first, second, third).map {
-					val result = stmt.executeQuery(it)
+				data += arrayOf(first, second, third, fourth).map { query ->
+					val result = stmt.executeQuery(query)
 					val data = mutableListOf<GeoObject>()
 					while (result.next()) {
 						val id = result.getString("id")
 						val type = result.getInt("type")
 						val geom = result.getObject("geom") as PGgeometry
+						val wkt = geom.toString()
 						when (geom.geoType) {
+							Geometry.POINT -> {
+								val pt = org.postgis.Point(wkt)
+								data += GeoObject(
+									id,
+									type,
+									listOf(Point(AwtPoint(pt.x.toInt(), pt.y.toInt())))
+								)
+							}
+							Geometry.LINESTRING -> {
+								val line = org.postgis.LineString(wkt)
+								data += GeoObject(
+									id,
+									type,
+									listOf(Line(line.points.map { AwtPoint(it.x.toInt(), it.y.toInt()) }))
+								)
+							}
 							Geometry.POLYGON -> {
-								val wkt = geom.toString()
 								val poly = org.postgis.Polygon(wkt)
 								if (poly.numRings() < 1) continue
-//								data += GeoObject(id, type, convertPolygon(poly))
+								val polys = convertPolygon(poly)
+								val holes = polys.drop(1).map { Area(it) }
+								data += GeoObject(id, type, listOf(Area(polys[0], holes)))
 							}
 							Geometry.MULTIPOLYGON -> {
-								val wkt = geom.toString()
 								val multiPoly = org.postgis.MultiPolygon(wkt)
-								multiPoly.polygons.forEach {
-									if (it.numRings() < 1) return@forEach
-//									data += GeoObject(id, type, convertPolygon(it))
+								val parts = multiPoly.polygons.mapNotNull {
+									if (it.numRings() < 1) return@mapNotNull null
+									val converted = convertPolygon(it)
+									val poly = converted[0]
+									val holes = converted.drop(1).map { hole -> Area(hole) }
+									Area(poly, holes)
 								}
+								data += GeoObject(id, type, parts)
 							}
-							Geometry.POINT -> {}
-							Geometry.MULTIPOINT -> {}
-							Geometry.LINESTRING -> {}
-							Geometry.MULTILINESTRING -> {}
 						}
 					}
 					data
