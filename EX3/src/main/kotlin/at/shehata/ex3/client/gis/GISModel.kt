@@ -1,9 +1,14 @@
 package at.shehata.ex3.client.gis
 
+import at.shehata.ex3.client.gis.components.Server
 import at.shehata.ex3.client.interfaces.IDataObserver
+import at.shehata.ex3.server.DummyGIS
 import at.shehata.ex3.server.OSMServer
+import at.shehata.ex3.server.VerwaltungsgrenzenServer
 import at.shehata.ex3.utils.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.awt.Color
 import java.awt.Graphics2D
@@ -12,6 +17,7 @@ import java.awt.Rectangle
 import java.awt.geom.Point2D
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
+import at.shehata.ex3.server.interfaces.Server as IServer
 import java.awt.Point as AwtPoint
 
 private const val INCHES_PER_CENTIMETER = 2.54
@@ -22,15 +28,9 @@ private const val POI_IMAGE_WIDTH = 20
  * Contains the core logic that the controller calls
  */
 open class GISModel {
-	private var mWorldMatrix = Matrix()
+	private val mMutex = Mutex()
 
-	private val mPOIsImage = BufferedImage(POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, BufferedImage.TRANSLUCENT).apply {
-		val img = ImageIO.read(this@GISModel.javaClass.getResource("/POI.png"))
-		createGraphics().apply {
-			drawImage(img, 0, 0, POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, null)
-			dispose()
-		}
-	}
+	private var mWorldMatrix = Matrix()
 
 	/**
 	 * List of all Polygons to render
@@ -41,11 +41,20 @@ open class GISModel {
 
 	private val mDotPerInch = 72.0
 
+	private val mPOIsImage = BufferedImage(POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, BufferedImage.TRANSLUCENT).apply {
+		val img = ImageIO.read(this@GISModel.javaClass.getResource("/POI.png"))
+		createGraphics().apply {
+			drawImage(img, 0, 0, POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, null)
+			dispose()
+		}
+	}
+
 	/**
 	 * width and height of the image
 	 */
 	private var mWidth: Int = 1
 	private var mHeight: Int = 1
+	private var mServer: IServer = OSMServer()
 
 	/**
 	 * The image that gets filled with polygons
@@ -85,16 +94,17 @@ open class GISModel {
 		zoomToFit()
 	}
 
-	suspend fun loadData() = withContext(Dispatchers.Default) {
-//        val stmt = "SELECT * FROM data WHERE type in (233, 931, 932, 933, 934, 1101)"
-//        DummyGIS().apply {
-//            if (init()) {
-//                extractData(stmt)?.let { mData += it.toTypedArray() }
-//            }
-//        }
-//        mData += VerwaltungsgrenzenServer().load3857Data()
+	fun setServer(_server: Server) {
+		mServer = when (_server) {
+			Server.OSM -> OSMServer()
+			Server.DUMMY_GIS -> DummyGIS()
+			Server.VERWALTUNGSGRENZEN -> VerwaltungsgrenzenServer()
+		}
+	}
+
+	suspend fun loadData() = withContext(Dispatchers.IO) {
 		mData.clear()
-		mData += OSMServer().loadData().flatten()
+		mData += mServer.loadData()
 	}
 
 	suspend fun loadPOIData() = withContext(Dispatchers.Default) {
@@ -109,8 +119,7 @@ open class GISModel {
 
 	suspend fun loadAreaData() = withContext(Dispatchers.Default) {
 		mData.clear()
-		mData += OSMServer().getArea(mWorldMatrix.inverse() * Rectangle(0, 0, mWidth, mHeight))
-		println(mData.toTypedArray().contentToString())
+		mData += mServer.getArea(mWorldMatrix.inverse() * Rectangle(0, 0, mWidth, mHeight))
 	}
 
 	suspend fun hidePOI() {
@@ -124,23 +133,23 @@ open class GISModel {
 	 * calls the observers.
 	 */
 	suspend fun repaint() = withContext(Dispatchers.Default) {
-//        val context = DummyGIS().getDrawingContext()
-//        val context = VerwaltungsgrenzenServer().getDrawingContext()
-		val context = OSMServer().drawingContext
+		val context = mServer.mDrawingContext
 		mImage.graphics.let { graphics ->
 			graphics as Graphics2D
 			graphics.color = Color(240, 240, 240)
 			graphics.fillRect(0, 0, mWidth, mHeight)
 
-			mData.forEach {
-				val values = context.getSchema(it.mType) ?: context.getDefaultSchema()
-				values.paint(graphics, it, mWorldMatrix)
-			}
+			mMutex.withLock {
+				mData.forEach {
+					val values = context.getSchema(it.mType) ?: context.getDefaultSchema()
+					values.paint(graphics, it, mWorldMatrix)
+				}
 
-			mPOIData.forEach {
-				val pt = (it.mObjects[0] as Point).mGeometry
-				val pos = mWorldMatrix * AwtPoint(pt.x, pt.y)
-				graphics.drawImage(mPOIsImage, pos.x, pos.y, null)
+				mPOIData.forEach {
+					val pt = (it.mObjects[0] as Point).mGeometry
+					val pos = mWorldMatrix * AwtPoint(pt.x, pt.y)
+					graphics.drawImage(mPOIsImage, pos.x, pos.y, null)
+				}
 			}
 		}
 
@@ -260,12 +269,6 @@ open class GISModel {
 	 */
 	fun zoomToScale(_scale: Int) {
 		mImage = initCanvas()
-		val vector = Point2D.Double(0.0, 1.0)
-
-		val a = mDotPerInch / INCHES_PER_CENTIMETER
-		val b = vector.distance(0.0, 0.0)
-		val c = (a * b / _scale)
-
 		mWorldMatrix = Matrix.zoomPoint(
 			mWorldMatrix,
 			AwtPoint(mWidth / 2, mHeight / 2),
@@ -341,12 +344,8 @@ open class GISModel {
 			}
 		}
 
-		_geoObj.forEach { g ->
-			g.mBounds.forEach { boundingBox.add(it) }
-		}
-
-//		for (i in (1 until _poly.size)) {
-//
+//		_geoObj.forEach { g ->
+//			g.mBounds.forEach { boundingBox.add(it) }
 //		}
 
 		return boundingBox

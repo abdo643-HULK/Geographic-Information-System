@@ -22,101 +22,101 @@ import java.awt.image.BufferedImage
  * @param mController the controller with the handlers for the elements
  */
 class GISView(private val mController: GISController) : IDataObserver, BorderPane() {
-    companion object {
-        const val SCALE_FIELD_ID = "scale-field"
-    }
+	companion object {
+		const val SCALE_FIELD_ID = "scale-field"
+	}
 
-    /**
-     * The image to render on the canvas
-     */
-    private lateinit var mImage: BufferedImage
+	/**
+	 * The image to render on the canvas
+	 */
+	private lateinit var mImage: BufferedImage
 
-    init {
-        start()
-    }
+	init {
+		start()
+	}
 
-    /**
-     * initializes all the UI elements and attaches them
-     * to the View.
-     */
-    private fun start() {
-        top = MenuBar()
-        center = CanvasPane(
-            mController.getMouseHandler(),
-            mController.getChangeHandler(),
-        )
-        bottom = BottomBar(mController.getActionHandler(), mController.getKeyHandler())
-        onKeyPressed = mController.getKeyHandler()
-        onKeyReleased = mController.getKeyHandler()
-        onScroll = mController.getScrollHandler()
-    }
+	/**
+	 * initializes all the UI elements and attaches them
+	 * to the View.
+	 */
+	private fun start() {
+		top = MenuBar(mController.getActionHandler())
+		center = CanvasPane(
+			mController.getMouseHandler(),
+			mController.getChangeHandler(),
+		)
+		bottom = BottomBar(mController.getActionHandler(), mController.getKeyHandler())
+		onKeyPressed = mController.getKeyHandler()
+		onKeyReleased = mController.getKeyHandler()
+		onScroll = mController.getScrollHandler()
+	}
 
-    /**
-     * renders the image on the canvas
-     */
-    fun repaint() {
-        val writable = SwingFXUtils.toFXImage(mImage, null)
-        val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+	/**
+	 * renders the image on the canvas
+	 */
+	fun repaint() {
+		val writable = SwingFXUtils.toFXImage(mImage, null)
+		val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
 
-        canvas.graphicsContext2D.apply {
-            clearRect(0.0, 0.0, canvas.width, canvas.height)
-            drawImage(writable, 0.0, 0.0)
-        }
-    }
+		canvas.graphicsContext2D.apply {
+			clearRect(0.0, 0.0, canvas.width, canvas.height)
+			drawImage(writable, 0.0, 0.0)
+		}
+	}
 
-    fun drawXOR(_rect: Rectangle2D) {
-        val overlay = scene.lookup("#${GISApplication.OVERLAY_ID}") as Canvas
-        overlay.graphicsContext2D.apply {
-            clearRect(0.0, 0.0, scene.width, scene.height)
-            stroke = Color.AZURE
-            lineWidth = 2.0
-            strokeRect(_rect.minX, _rect.minY, _rect.width, _rect.height)
-        }
-    }
+	fun drawXOR(_rect: Rectangle2D) {
+		val overlay = scene.lookup("#${GISApplication.OVERLAY_ID}") as Canvas
+		overlay.graphicsContext2D.apply {
+			clearRect(0.0, 0.0, scene.width, scene.height)
+			stroke = Color.AZURE
+			lineWidth = 2.0
+			strokeRect(_rect.minX, _rect.minY, _rect.width, _rect.height)
+		}
+	}
 
-    fun clearXOR() {
-        val overlay = scene.lookup("#${GISApplication.OVERLAY_ID}") as Canvas
-        overlay.graphicsContext2D.apply {
-            clearRect(0.0, 0.0, scene.width, scene.height)
-        }
-    }
+	fun clearXOR() {
+		val overlay = scene.lookup("#${GISApplication.OVERLAY_ID}") as Canvas
+		overlay.graphicsContext2D.apply {
+			clearRect(0.0, 0.0, scene.width, scene.height)
+		}
+	}
 
-    fun saveContext() {
-        val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
-        canvas.graphicsContext2D.save()
-    }
+	fun saveContext() {
+		val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+		canvas.graphicsContext2D.save()
+	}
 
-    fun restoreContext() {
-        val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
-        canvas.graphicsContext2D.restore()
-    }
+	fun restoreContext() {
+		val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+		canvas.graphicsContext2D.restore()
+	}
 
-    fun translate(_dX: Double, _dY: Double) {
-        val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
-        val width = canvas.width
-        val height = canvas.height
-        val delta = 2.0
+	fun translate(_dX: Double, _dY: Double) {
+		val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+		val width = canvas.width
+		val height = canvas.height
+		val delta = 2.0
 
-        canvas.graphicsContext2D.apply {
-            clearRect(0.0, delta, width, height) // top
-            clearRect(0.0, height - delta, width, height) // bottom
-            translate(_dX, _dY)
+		canvas.graphicsContext2D.apply {
+			clearRect(0.0, delta, width, height) // top
+			clearRect(0.0, height - delta, width, height) // bottom
+			translate(_dX, _dY)
 
-            val writable = SwingFXUtils.toFXImage(mImage, null)
-            drawImage(writable, 0.0, 0.0)
-        }
-    }
+			val writable = SwingFXUtils.toFXImage(mImage, null)
+			drawImage(writable, 0.0, 0.0)
+		}
+	}
 
-    /**
-     * updates the image on repaints the canvas
-     * when it receives an update from the Subject
-     */
-    override fun update(_img: Image, _scale: Int) {
-        mImage = _img as BufferedImage
-        (scene.lookup("#${SCALE_FIELD_ID}") as TextField).apply {
-            text = "$_scale"
-        }
-        repaint()
-    }
+	/**
+	 * updates the image on repaints the canvas
+	 * when it receives an update from the Subject
+	 */
+	override fun update(_img: Image, _scale: Int) {
+		mImage = _img as BufferedImage
+		(scene.lookup("#${SCALE_FIELD_ID}") as TextField).apply {
+			text = "$_scale"
+		}
+		repaint()
+	}
 
 }

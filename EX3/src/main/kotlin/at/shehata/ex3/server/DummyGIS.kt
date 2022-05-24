@@ -1,16 +1,23 @@
 package at.shehata.ex3.server
 
 import at.shehata.ex3.client.gis.drawingcontexts.DummyDrawingContext
+import at.shehata.ex3.server.interfaces.Server
+import at.shehata.ex3.utils.Area
 import at.shehata.ex3.utils.GeoObject
 import at.shehata.ex3.utils.SerializableGeoObject
 import de.intergis.JavaClient.comm.CgConnection
+import de.intergis.JavaClient.comm.CgError
 import de.intergis.JavaClient.gui.IgcConnection
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import java.awt.Polygon
+import java.awt.Rectangle
 import java.io.File
+import java.util.*
+import java.util.concurrent.TimeoutException
+import kotlin.concurrent.schedule
 
 private val ROUTES = mapOf(
 	"select * from data where type = 1101" to "./1.json",
@@ -33,7 +40,10 @@ private val ROUTES = mapOf(
 /**
  * Client class that calls the Server for the data to draw
  */
-open class DummyGIS {
+open class DummyGIS : Server {
+	override val mDrawingContext
+		@get:JvmName("getDrawingContext") get() = mContext
+
 	private val mContext by lazy { DummyDrawingContext() }
 
 	/**
@@ -46,8 +56,8 @@ open class DummyGIS {
 			CgConnection(
 				"admin",
 				"admin",
-//                "T:localhost:4949",
-				"T:10.29.17.141:4949",
+				"T:localhost:4949",
+//				"T:10.29.17.141:4949",
 				null
 			)
 		)
@@ -67,16 +77,33 @@ open class DummyGIS {
 	fun init(): Boolean {
 		try {
 			mGeoInterface
+			Timer("killConnection", false).schedule(500) {
+				throw TimeoutException()
+			}
 			return true
 		} catch (_e: Exception) {
-			_e.printStackTrace()
+			when (_e) {
+				is TimeoutException -> {
+					return true
+				}
+				is CgError -> when (_e.localizedMessage.endsWith("Connection refused")) {
+					true -> return true
+					false -> _e.printStackTrace()
+				}
+			}
 		}
 		return false
 	}
 
 //    fun init() = true
 
-	fun getDrawingContext() = mContext
+	override fun loadData() = when (init()) {
+		true -> extractData("SELECT * FROM data WHERE type in (233, 931, 932, 933, 934, 1101)")
+			?.map { GeoObject(it.mId, it.mType, listOf(Area(it.mPoly, emptyList()))) } ?: emptyList()
+		false -> emptyList()
+	}
+
+	override fun getArea(_boundingBox: Rectangle) = loadData()
 
 	/**
 	 * Extracts GeoObjects from the Server
@@ -104,7 +131,7 @@ open class DummyGIS {
 					val xArray = parts[i].x
 					val yArray = parts[i].y
 					val poly = Polygon(xArray, yArray, pointCount)
-					objectContainer.add(SerializableGeoObject(obj.name, obj.category, poly))
+					objectContainer += SerializableGeoObject(obj.name, obj.category, poly)
 				} // for i
 			} // while cursor
 

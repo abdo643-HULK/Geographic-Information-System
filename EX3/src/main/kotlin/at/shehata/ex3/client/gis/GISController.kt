@@ -2,6 +2,7 @@ package at.shehata.ex3.client.gis
 
 import at.shehata.ex3.GISApplication
 import at.shehata.ex3.client.gis.components.ButtonActions
+import at.shehata.ex3.client.gis.components.Server
 import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
@@ -11,6 +12,7 @@ import javafx.event.EventHandler
 import javafx.scene.Cursor
 import javafx.scene.canvas.Canvas
 import javafx.scene.control.Button
+import javafx.scene.control.RadioMenuItem
 import javafx.scene.control.TextField
 import javafx.scene.image.WritableImage
 import javafx.scene.input.*
@@ -95,75 +97,77 @@ class GISController(
 		private var mIsSticky = false
 
 		@Suppress("MagicNumber")
-		override fun handle(_event: ActionEvent): Unit = when (ButtonActions.valueOf((_event.source as Button).id)) {
-			ButtonActions.SAVE -> saveToFile()
-			ButtonActions.ZOOM_IN -> mModel.zoom(1.3)
-			ButtonActions.ZOOM_OUT -> mModel.zoom(1 / 1.3)
-			ButtonActions.SCROLL_UP -> {
-				mScope.launch { mModel.scrollVerticalNonBlocking(20) }
-				Unit
+		override fun handle(_event: ActionEvent) {
+			when (_event.source) {
+				is Button -> bottomBarHandler(_event)
+				is RadioMenuItem -> menuBarHandler(_event)
 			}
-			ButtonActions.SCROLL_DOWN -> {
-				mScope.launch { mModel.scrollVerticalNonBlocking(-20) }
-				Unit
-			}
-			ButtonActions.SCROLL_LEFT -> {
-				mScope.launch { mModel.scrollHorizontalNonBlocking(20) }
-				Unit
-			}
-			ButtonActions.SCROLL_RIGHT -> {
-				mScope.launch { mModel.scrollHorizontalNonBlocking(-20) }
-				Unit
-			}
-			ButtonActions.ZOOM_TO_FIT -> {
-				mScope.launch { mModel.zoomToFitNonBlock() }
-				Unit
-			}
-			ButtonActions.DRAW -> {
-				mScope.launch {
-					mModel.loadData()
-					mModel.repaint()
-				}
-				Unit
-			}
-			ButtonActions.TOGGLE_POI -> {
-				when (mIsPOIOn) {
-					true -> {
-						(_event.source as Button).text = "Show POI"
-						mScope.launch {
-							mModel.hidePOI()
-						}
-					}
-					false -> {
-						(_event.source as Button).text = "Hide POI"
-						mScope.launch {
-							mModel.loadPOIData()
-							mModel.repaint()
-						}
-					}
-				}
-				mIsPOIOn = !mIsPOIOn
-			}
-			ButtonActions.STICKY -> {
-				val btn = (_event.source as Button)
-				when (mIsSticky) {
-					true -> {
-						btn.text = "Sticky"
-						mScope.launch {
-							mModel.loadData()
-							mModel.repaint()
-						}
-					}
-					false -> {
-						btn.text = "Disable Sticky"
-						mScope.launch {
-							mModel.loadAreaData()
-							mModel.repaint()
-						}
+		}
 
+		private fun menuBarHandler(_event: ActionEvent) =
+			mModel.setServer(Server.valueOf((_event.source as RadioMenuItem).id))
+
+		private fun bottomBarHandler(_event: ActionEvent) {
+			when (ButtonActions.valueOf((_event.source as Button).id)) {
+				ButtonActions.SAVE -> saveToFile()
+				ButtonActions.SCROLL_UP -> mScope.launch { mModel.scrollVerticalNonBlocking(20) }
+				ButtonActions.SCROLL_DOWN -> mScope.launch { mModel.scrollVerticalNonBlocking(-20) }
+				ButtonActions.SCROLL_LEFT -> mScope.launch { mModel.scrollHorizontalNonBlocking(20) }
+				ButtonActions.SCROLL_RIGHT -> mScope.launch { mModel.scrollHorizontalNonBlocking(-20) }
+				ButtonActions.ZOOM_TO_FIT -> mScope.launch { mModel.zoomToFitNonBlock() }
+				ButtonActions.ZOOM_IN -> {
+					mModel.zoom(1.3)
+					mScope.launch { mModel.repaint() }
+				}
+				ButtonActions.ZOOM_OUT -> {
+					mModel.zoom(1 / 1.3)
+					mScope.launch { mModel.repaint() }
+				}
+				ButtonActions.DRAW -> {
+					mScope.launch {
+						mModel.loadData()
+						mModel.repaint()
 					}
 				}
-				mIsSticky = !mIsSticky
+				ButtonActions.TOGGLE_POI -> {
+					when (mIsPOIOn) {
+						true -> {
+							(_event.source as Button).text = "Show POI"
+							mScope.launch {
+								mModel.hidePOI()
+							}
+						}
+						false -> {
+							(_event.source as Button).text = "Hide POI"
+							mScope.launch {
+								mModel.loadPOIData()
+								mModel.repaint()
+							}
+						}
+					}
+					mIsPOIOn = !mIsPOIOn
+				}
+				ButtonActions.STICKY -> {
+					val btn = (_event.source as Button)
+					when (mIsSticky) {
+						true -> {
+							btn.text = "Sticky"
+							mScope.launch {
+								mModel.loadData()
+								mModel.repaint()
+							}
+						}
+						false -> {
+							btn.text = "Disable Sticky"
+							mScope.launch {
+								mModel.loadAreaData()
+								mModel.repaint()
+							}
+
+						}
+					}
+					mIsSticky = !mIsSticky
+				}
 			}
 		}
 
@@ -206,56 +210,56 @@ class GISController(
 		}
 
 
-        private fun mousePressedHandler(_event: MouseEvent) {
-            val x = _event.x.toInt()
-            val y = _event.y.toInt()
+		private fun mousePressedHandler(_event: MouseEvent) {
+			val x = _event.x.toInt()
+			val y = _event.y.toInt()
 
-            mDeltaDrag.setLocation(x, y)
-            mStartPoint.setLocation(x, y)
-            mOverlayRect.setRect(x.toDouble(), y.toDouble(), 1.0, 1.0)
+			mDeltaDrag.setLocation(x, y)
+			mStartPoint.setLocation(x, y)
+			mOverlayRect.setRect(x.toDouble(), y.toDouble(), 1.0, 1.0)
 
-            when (_event.button) {
-                MouseButton.SECONDARY -> mView.saveContext()
-                MouseButton.PRIMARY -> saveToClipboard(_event)
-                else -> return
-            }
-        }
+			when (_event.button) {
+				MouseButton.SECONDARY -> mView.saveContext()
+				MouseButton.PRIMARY -> saveToClipboard(_event)
+				else -> return
+			}
+		}
 
-        private fun mouseDraggedHandler(_event: MouseEvent) {
-            mView.cursor = when (_event.button) {
-                MouseButton.PRIMARY -> {
-                    val deltaX = _event.x.toInt() - mStartPoint.x
-                    val deltaY = _event.y.toInt() - mStartPoint.y
-                    when {
-                        deltaX == 0 && deltaY == 0 -> Cursor.DEFAULT
-                        else -> {
-                            setOverlay(_event, deltaX, deltaY)
-                            mView.drawXOR(mOverlayRect)
+		private fun mouseDraggedHandler(_event: MouseEvent) {
+			mView.cursor = when (_event.button) {
+				MouseButton.PRIMARY -> {
+					val deltaX = _event.x.toInt() - mStartPoint.x
+					val deltaY = _event.y.toInt() - mStartPoint.y
+					when {
+						deltaX == 0 && deltaY == 0 -> Cursor.DEFAULT
+						else -> {
+							setOverlay(_event, deltaX, deltaY)
+							mView.drawXOR(mOverlayRect)
 
-                            Cursor.CROSSHAIR
-                        }
-                    }
-                }
-                MouseButton.SECONDARY -> {
-                    val dx = _event.x - mDeltaDrag.x.toDouble()
-                    val dy = _event.y - mDeltaDrag.y.toDouble()
-                    mDeltaDrag.setLocation(_event.x, _event.y)
-                    mView.translate(dx, dy)
+							Cursor.CROSSHAIR
+						}
+					}
+				}
+				MouseButton.SECONDARY -> {
+					val dx = _event.x - mDeltaDrag.x.toDouble()
+					val dy = _event.y - mDeltaDrag.y.toDouble()
+					mDeltaDrag.setLocation(_event.x, _event.y)
+					mView.translate(dx, dy)
 
-                    Cursor.MOVE
-                }
-                else -> Cursor.DEFAULT
-            }
-        }
+					Cursor.MOVE
+				}
+				else -> Cursor.DEFAULT
+			}
+		}
 
 		private fun mouseReleaseHandler(_event: MouseEvent) {
 			val deltaX = _event.x.toInt() - mStartPoint.x
 			val deltaY = _event.y.toInt() - mStartPoint.y
 			when (_event.button) {
 				MouseButton.PRIMARY -> {
-					if (deltaX <= 0 || deltaY <= 0) return
+					if (deltaX == 0 && deltaY == 0) return
 					mView.clearXOR()
-					mScope.launch { mModel.zoomRectNonBlock(Rectangle(mStartPoint.x, mStartPoint.y, deltaX, deltaY)) }
+					mScope.launch { mModel.zoomRectNonBlock(mOverlayRect) }
 				}
 				MouseButton.SECONDARY -> {
 					mModel.scrollHorizontal(deltaX)
@@ -267,56 +271,35 @@ class GISController(
 			}
 			mView.cursor = Cursor.DEFAULT
 		}
+
+		private fun setOverlay(_event: MouseEvent, _deltaX: Int, _deltaY: Int) {
+			val (x, width) = when {
+				_deltaX < 0 -> _event.x to mStartPoint.x - _event.x
+				_deltaX > 0 -> mStartPoint.x.toDouble() to _deltaX.toDouble()
+				else -> return
+			}
+
+			val (y, height) = when {
+				_deltaY < 0 -> _event.y to mStartPoint.y - _event.y
+				_deltaY > 0 -> mStartPoint.y.toDouble() to _deltaY.toDouble()
+				else -> return
+			}
+
+			mOverlayRect.setRect(x, y, width, height)
+		}
+
+		private fun saveToClipboard(_event: MouseEvent) {
+			Toolkit.getDefaultToolkit().systemClipboard.apply {
+				val data = mModel.getMapPoint(Point(_event.x.toInt(), _event.y.toInt())).let { "(${it.x},${it.y})\n" }
+				if (_event.isControlDown) {
+					val oldData = getContents(this@MouseHandler).getTransferData(DataFlavor.stringFlavor) as String
+					setContents(StringSelection(oldData + data), mOwner)
+					return
+				}
+				setContents(StringSelection(data), mOwner)
+			}
+		}
 	}
-        private fun mouseReleaseHandler(_event: MouseEvent) {
-            val deltaX = _event.x.toInt() - mStartPoint.x
-            val deltaY = _event.y.toInt() - mStartPoint.y
-
-            when (_event.button) {
-                MouseButton.PRIMARY -> {
-                    if (deltaX == 0 || deltaY == 0) return
-                    mView.clearXOR()
-                    mScope.launch { mModel.zoomRectNonBlock(Rectangle(mStartPoint.x, mStartPoint.y, deltaX, deltaY)) }
-                }
-                MouseButton.SECONDARY -> {
-                    mModel.scrollHorizontal(deltaX)
-                    mModel.scrollVertical(deltaY)
-                    mView.restoreContext()
-                    mModel.repaint()
-                }
-                else -> Unit
-            }
-            mView.cursor = Cursor.DEFAULT
-        }
-
-        private fun setOverlay(_event: MouseEvent, _deltaX: Int, _deltaY: Int) {
-            val (x, width) = when {
-                _deltaX < 0 -> _event.x to mStartPoint.x - _event.x
-                _deltaX > 0 -> mStartPoint.x.toDouble() to _deltaX.toDouble()
-                else -> return
-            }
-
-            val (y, height) = when {
-                _deltaY < 0 -> _event.y to mStartPoint.y - _event.y
-                _deltaY > 0 -> mStartPoint.y.toDouble() to _deltaY.toDouble()
-                else -> return
-            }
-
-            mOverlayRect.setRect(x, y, width, height)
-        }
-
-        private fun saveToClipboard(_event: MouseEvent) {
-            Toolkit.getDefaultToolkit().systemClipboard.apply {
-                val data = mModel.getMapPoint(Point(_event.x.toInt(), _event.y.toInt())).let { "(${it.x},${it.y})\n" }
-                if (_event.isControlDown) {
-                    val oldData = getContents(this@MouseHandler).getTransferData(DataFlavor.stringFlavor) as String
-                    setContents(StringSelection(oldData + data), mOwner)
-                    return
-                }
-                setContents(StringSelection(data), mOwner)
-            }
-        }
-    }
 
 	/**
 	 * Handler for the Keyboard Keys
@@ -330,22 +313,22 @@ class GISController(
 			}
 		}
 
-        /**
-         * helper function for Key_Released
-         * Handles Scrolling, when LEFT, DOWN, RIGHT or UP is clicked
-         * Handles Rotating, when R is clicked
-         */
-        private fun handleKeyReleased(_event: KeyEvent) {
-            when (_event.code) {
-                KeyCode.R -> if (_event.isShiftDown) mModel.rotate(-PI / 2) else mModel.rotate(PI / 2)
-                KeyCode.ENTER -> when (_event.source) {
-                    is TextField -> mModel.zoomToScale((_event.source as TextField).text.toInt())
-                    else -> return
-                }
-                else -> return
-            }
-            mModel.repaint()
-        }
+		/**
+		 * helper function for Key_Released
+		 * Handles Scrolling, when LEFT, DOWN, RIGHT or UP is clicked
+		 * Handles Rotating, when R is clicked
+		 */
+		private fun handleKeyReleased(_event: KeyEvent) {
+			when (_event.code) {
+				KeyCode.R -> if (_event.isShiftDown) mModel.rotate(-PI / 2) else mModel.rotate(PI / 2)
+				KeyCode.ENTER -> when (_event.source) {
+					is TextField -> mModel.zoomToScale((_event.source as TextField).text.toInt())
+					else -> return
+				}
+				else -> return
+			}
+			mScope.launch { mModel.repaint() }
+		}
 
 		/**
 		 * helper function for Key_Press
@@ -366,17 +349,11 @@ class GISController(
 	inner class ScrollHandler : EventHandler<ScrollEvent> {
 		override fun handle(_event: ScrollEvent) {
 			val pt = Point(_event.x.toInt(), _event.y.toInt())
-			if (_event.deltaY < 0) mModel.zoom(pt, 1.1) else mModel.zoom(pt, 1 / 1.1)
+			val factor = if (_event.deltaY > 0) 1.1 else 1 / 1.1
+			mModel.zoom(pt, factor)
 			mScope.launch { mModel.repaint() }
 		}
 	}
-    inner class ScrollHandler : EventHandler<ScrollEvent> {
-        override fun handle(_event: ScrollEvent) {
-            val pt = Point(_event.x.toInt(), _event.y.toInt())
-            val factor = if (_event.deltaY > 0) 1.2 else 1 / 1.2
-            mModel.zoom(pt, factor)
-        }
-    }
 
 	/**
 	 * handler that listens for resizes of the canvas

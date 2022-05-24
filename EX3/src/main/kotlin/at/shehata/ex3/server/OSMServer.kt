@@ -1,10 +1,9 @@
 package at.shehata.ex3.server
 
 import at.shehata.ex3.client.gis.drawingcontexts.OSMDrawingContext
-import at.shehata.ex3.utils.Area
-import at.shehata.ex3.utils.GeoObject
-import at.shehata.ex3.utils.Line
-import at.shehata.ex3.utils.Point
+import at.shehata.ex3.server.interfaces.Server
+import at.shehata.ex3.utils.*
+import org.intellij.lang.annotations.Language
 import org.postgis.Geometry
 import org.postgis.PGgeometry
 import org.postgresql.PGConnection
@@ -13,6 +12,7 @@ import java.awt.Polygon
 import java.awt.Rectangle
 import java.sql.Connection
 import java.sql.DriverManager
+import java.sql.Statement
 import java.awt.Point as AwtPoint
 
 private enum class OSM_Landuse(value: Int) {
@@ -30,28 +30,36 @@ private enum class OSM_Natural(value: Int) {
 	water(6005)
 }
 
+@Language("SQL")
 private const val NATURAL_QUERY =
 	"SELECT * FROM osm_natural " +
 			"WHERE osm_natural.type " +
 			"IN (6001, 6002, 6005)"
 
+@Language("SQL")
 private const val LANDUSE_QUERY =
 	"SELECT * FROM osm_landuse " +
 			"WHERE osm_landuse.type " +
 			"IN (5001, 5002, 5003, 5004, 5005, 5006)"
 
+@Language("SQL")
 private const val HIGHWAY_QUERRY = "SELECT * FROM osm_highway " +
 		"WHERE osm_highway.type " +
 		"IN (1010, 1030)"
 
+@Language("SQL")
 private const val BUILDING_QUERY = "SELECT * FROM osm_building"
 
-class OSMServer {
+class OSMServer : Server {
+	override val mDrawingContext
+		@get:JvmName("getDrawingContext") get() = mContext
+
 	private val mContext by lazy { OSMDrawingContext() }
 
-	@get:JvmName("getDrawingContext")
-	val drawingContext
-		get() = mContext
+	init {
+		/* Load the JDBC driver. */
+		org.postgresql.Driver::javaClass
+	}
 
 	private fun createConnection(_db: String): PGConnection {
 		val url = "jdbc:postgresql://localhost:5432/$_db"
@@ -75,67 +83,65 @@ class OSMServer {
 			}
 			list += Polygon(xPoints, yPoints, ring.numPoints())
 		}
+
 		return list
 	}
 
-	fun loadData(): List<List<GeoObject>> {
+	private fun extractObject(_geom: PGgeometry): List<GeoObjectPart> {
+		val wkt = _geom.toString()
+		return when (_geom.geoType) {
+			Geometry.POINT -> {
+				val pt = org.postgis.Point(wkt)
+				listOf(Point(AwtPoint(pt.x.toInt(), pt.y.toInt())))
+			}
+			Geometry.LINESTRING -> {
+				val line = org.postgis.LineString(wkt)
+				listOf(Line(line.points.map { AwtPoint(it.x.toInt(), it.y.toInt()) }))
+			}
+			Geometry.POLYGON -> {
+				val poly = org.postgis.Polygon(wkt)
+				if (poly.numRings() < 1) return emptyList()
+				val polys = convertPolygon(poly)
+				val holes = polys.drop(1).map { Area(it) }
+				listOf(Area(polys[0], holes))
+			}
+			Geometry.MULTIPOLYGON -> {
+				val multiPoly = org.postgis.MultiPolygon(wkt)
+				multiPoly.polygons.mapNotNull {
+					if (it.numRings() < 1) return@mapNotNull null
+					val converted = convertPolygon(it)
+					val poly = converted[0]
+					val holes = converted.drop(1).map { hole -> Area(hole) }
+					Area(poly, holes)
+				}
+			}
+			else -> emptyList()
+		}
+	}
+
+	private fun getObjects(_stmt: Statement, _query: String): List<GeoObject> {
+		val result = _stmt.executeQuery(_query)
+		val objects = mutableListOf<GeoObject>()
+		while (result.next()) {
+			val id = result.getString("id")
+			val type = result.getInt("type")
+			val geom = result.getObject("geom") as PGgeometry
+			objects += GeoObject(id, type, extractObject(geom))
+		}
+
+		return objects
+	}
+
+	override fun loadData(): List<GeoObject> {
 		val data = mutableListOf<List<GeoObject>>()
 		try {
 			createConnection("osm-hagenberg").apply {
 				/* Create a statement and execute a select query. */
 				val stmt = (this as Connection).createStatement()
 
-				data += arrayOf(NATURAL_QUERY, LANDUSE_QUERY, HIGHWAY_QUERRY, BUILDING_QUERY).map { query ->
-					val result = stmt.executeQuery(query)
-					val data = mutableListOf<GeoObject>()
-					while (result.next()) {
-						val id = result.getString("id")
-						val type = result.getInt("type")
-						val geom = result.getObject("geom") as PGgeometry
-						when (geom.geoType) {
-							Geometry.POINT -> {
-								val wkt = geom.toString()
-								val pt = org.postgis.Point(wkt)
-								data += GeoObject(
-									id,
-									type,
-									listOf(Point(AwtPoint(pt.x.toInt(), pt.y.toInt())))
-								)
-							}
-							Geometry.LINESTRING -> {
-								val wkt = geom.toString()
-								val line = org.postgis.LineString(wkt)
-								data += GeoObject(
-									id,
-									type,
-									listOf(Line(line.points.map { AwtPoint(it.x.toInt(), it.y.toInt()) }))
-								)
-							}
-							Geometry.POLYGON -> {
-								val wkt = geom.toString()
-								val poly = org.postgis.Polygon(wkt)
-								if (poly.numRings() < 1) continue
-								val polys = convertPolygon(poly)
-								val holes = polys.drop(1).map { Area(it) }
-								data += GeoObject(id, type, listOf(Area(polys[0], holes)))
-							}
-							Geometry.MULTIPOLYGON -> {
-								val wkt = geom.toString()
-								val multiPoly = org.postgis.MultiPolygon(wkt)
-								val parts = multiPoly.polygons.mapNotNull {
-									if (it.numRings() < 1) return@mapNotNull null
-									val converted = convertPolygon(it)
-									val poly = converted[0]
-									val holes = converted.drop(1).map { hole -> Area(hole) }
-									Area(poly, holes)
-								}
-								data += GeoObject(id, type, parts)
+				data += arrayOf(NATURAL_QUERY, LANDUSE_QUERY, HIGHWAY_QUERRY, BUILDING_QUERY)
+					.map { query -> getObjects(stmt, query) }
 
-							}
-						}
-					}
-					data
-				}
 				stmt.close()
 				close()
 			}
@@ -143,89 +149,44 @@ class OSMServer {
 			_e.printStackTrace()
 		}
 
-		return data
+		return data.flatten()
 	}
 
-//                    prepareStatement(
-//                        "SELECT * FROM osm_landuse " +
-//                                "WHERE osm_landuse.geom " +
-//                                "&& ST_MakeEnvelope(?,?,?,?) " +
-//                                "AND osm_landuse.type IN (5001, 5002, 5003, 5004, 5005, 5006)"
-//                    )
-
-	fun getArea(_boundingBox: Rectangle): List<GeoObject> {
+	override fun getArea(_boundingBox: Rectangle): List<GeoObject> {
 		val data = mutableListOf<GeoObject>()
 		try {
 			createConnection("osm-hagenberg").apply {
 				/* Create a statement and execute a select query. */
 				val stmt = (this as Connection).createStatement()
 				val envelope = _boundingBox.let { "ST_MakeEnvelope(${it.minX},${it.minY},${it.maxX},${it.maxY})" }
+
+				@Language("SQL")
 				val first = "SELECT * FROM osm_natural " +
 						"WHERE osm_natural.geom " +
 						"&& $envelope " +
 						"AND osm_natural.type IN (6001, 6002, 6005)"
 
+				@Language("SQL")
 				val second = "SELECT * FROM osm_landuse " +
 						"WHERE osm_landuse.geom " +
 						"&& $envelope " +
 						"AND osm_landuse.type IN (5001, 5002, 5003, 5004, 5005, 5006)"
 
+				@Language("SQL")
 				val third = "SELECT * FROM osm_highway " +
 						"WHERE osm_highway.geom " +
 						"&& $envelope " +
-						"AND osm_landuse.type IN (1010, 1030)"
+						"AND osm_highway.type IN (1010, 1030)"
 
+				@Language("SQL")
 				val fourth = "SELECT * FROM osm_building " +
 						"WHERE osm_building.geom " +
 						"&& $envelope"
 
-				data += arrayOf(first, second, third, fourth).map { query ->
-					val result = stmt.executeQuery(query)
-					val data = mutableListOf<GeoObject>()
-					while (result.next()) {
-						val id = result.getString("id")
-						val type = result.getInt("type")
-						val geom = result.getObject("geom") as PGgeometry
-						val wkt = geom.toString()
-						when (geom.geoType) {
-							Geometry.POINT -> {
-								val pt = org.postgis.Point(wkt)
-								data += GeoObject(
-									id,
-									type,
-									listOf(Point(AwtPoint(pt.x.toInt(), pt.y.toInt())))
-								)
-							}
-							Geometry.LINESTRING -> {
-								val line = org.postgis.LineString(wkt)
-								data += GeoObject(
-									id,
-									type,
-									listOf(Line(line.points.map { AwtPoint(it.x.toInt(), it.y.toInt()) }))
-								)
-							}
-							Geometry.POLYGON -> {
-								val poly = org.postgis.Polygon(wkt)
-								if (poly.numRings() < 1) continue
-								val polys = convertPolygon(poly)
-								val holes = polys.drop(1).map { Area(it) }
-								data += GeoObject(id, type, listOf(Area(polys[0], holes)))
-							}
-							Geometry.MULTIPOLYGON -> {
-								val multiPoly = org.postgis.MultiPolygon(wkt)
-								val parts = multiPoly.polygons.mapNotNull {
-									if (it.numRings() < 1) return@mapNotNull null
-									val converted = convertPolygon(it)
-									val poly = converted[0]
-									val holes = converted.drop(1).map { hole -> Area(hole) }
-									Area(poly, holes)
-								}
-								data += GeoObject(id, type, parts)
-							}
-						}
-					}
-					data
-				}.flatten()
+				data += arrayOf(first, second, third, fourth)
+					.map { query -> getObjects(stmt, query) }
+					.flatten()
+
 				stmt.close()
 				close()
 			}
@@ -235,6 +196,4 @@ class OSMServer {
 
 		return data
 	}
-
-//    fun getDrawingContext() = mContext
 }

@@ -6,7 +6,7 @@ import java.awt.Point
 import java.awt.geom.Area
 
 class Line(
-	private val mGeometry: List<Point> = mutableListOf()
+	val mGeometry: List<Point> = mutableListOf()
 ) : GeoObjectPart() {
 	override fun draw(_ctx: Graphics2D, _world: Matrix, _area: Area) {
 		for (i in 0 until mGeometry.size - 1) {

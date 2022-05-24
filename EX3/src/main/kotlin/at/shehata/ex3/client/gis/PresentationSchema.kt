@@ -14,11 +14,12 @@ data class PresentationSchema(
 ) {
 	fun paint(_g: Graphics2D, _obj: GeoObject, _m: Matrix) {
 		val area = AwtArea()
-		_g.color = mLineColor
+		_g.color = mFillColor
 		_obj.mObjects.forEach { it.draw(_g, _m, area) }
+		_g.fill(area)
+		_g.color = mLineColor
 		_g.stroke = BasicStroke(mLineWidth)
 		_g.draw(area)
-		_g.color = mFillColor
-		_g.fill(area)
+
 	}
 }
