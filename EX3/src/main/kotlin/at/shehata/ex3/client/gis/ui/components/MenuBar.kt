@@ -1,11 +1,14 @@
-package at.shehata.ex3.client.gis.components
+package at.shehata.ex3.client.gis.ui.components
 
-import at.shehata.ex3.client.gis.GISController
+import at.shehata.ex3.client.gis.controller.GISController
 import javafx.scene.control.Menu
 import javafx.scene.control.MenuItem
 import javafx.scene.control.RadioMenuItem
 import javafx.scene.control.ToggleGroup
 
+/**
+ * Enum of the available Servers
+ */
 enum class Server(val mValue: String) {
 	OSM("OSM-Hagenberg"),
 	DUMMY_GIS("Dummy-GIS"),
@@ -20,20 +23,11 @@ enum class Server(val mValue: String) {
 class MenuBar(
 	_actionHandler: GISController.ActionHandler
 ) : javafx.scene.control.MenuBar() {
-	companion object {
-		/**
-		 * Id of the first item in Menu 'B'
-		 */
-		const val MENU_B_ITEM_01 = "SERVER_A"
-
-		/**
-		 * Id of the second item in Menu 'B'
-		 */
-		const val MENU_B_ITEM_02 = "SERVER_B"
-	}
-
+	/**
+	 * creates the Menus and adds them to the MenuBar
+	 */
 	init {
-		menus.addAll(createA(), createB(_actionHandler))
+		menus += arrayOf(createA(), createB(_actionHandler))
 	}
 
 	/**
@@ -50,10 +44,10 @@ class MenuBar(
 	}
 
 	/**
-	 * Creates the Menu 'B' with two item
-	 * in a ToggleGroup
+	 * Creates the Menu 'Server' with all available
+	 * Servers in a ToggleGroup
 	 *
-	 * @return The Menu 'B'
+	 * @return The Menu 'Server'
 	 * @see javafx.scene.control.Menu
 	 */
 	private fun createB(_actionHandler: GISController.ActionHandler) = Menu("Server").apply {

@@ -1,7 +1,9 @@
-package at.shehata.ex3.client.gis.components
+package at.shehata.ex3.client.gis.ui.components
 
+import at.shehata.ex3.CANVAS_ID
 import at.shehata.ex3.GISApplication
-import at.shehata.ex3.client.gis.GISController
+import at.shehata.ex3.OVERLAY_ID
+import at.shehata.ex3.client.gis.controller.GISController
 import javafx.scene.canvas.Canvas
 import javafx.scene.layout.StackPane
 
@@ -27,12 +29,12 @@ class CanvasPane(
         width.addListener(_changeHandler)
         height.addListener(_changeHandler)
         val canvas = Canvas().apply {
-            id = GISApplication.CANVAS_ID
+            id = CANVAS_ID
             widthProperty().bind(width)
             heightProperty().bind(height)
         }
         val overlay = Canvas().apply {
-            id = GISApplication.OVERLAY_ID
+            id = OVERLAY_ID
             widthProperty().bind(width)
             heightProperty().bind(height)
         }

@@ -1,11 +1,18 @@
 package at.shehata.ex3.client.gis.drawingcontexts
 
-import at.shehata.ex3.client.gis.PresentationSchema
+import at.shehata.ex3.feature.PresentationSchema
 import java.awt.Color
 import java.util.*
 
+/**
+ * The initial capacity of the hashtable to preallocate
+ * correctly without needing to resize
+ */
 private const val CAPACITY = 4
 
+/**
+ * The drawing context for the DummyGIS server
+ */
 class DummyDrawingContext : ADrawingContext(Hashtable(CAPACITY)) {
     override fun initSchemata() {
         mContext.apply {

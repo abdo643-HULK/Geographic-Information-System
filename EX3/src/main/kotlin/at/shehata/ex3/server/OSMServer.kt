@@ -1,8 +1,12 @@
 package at.shehata.ex3.server
 
 import at.shehata.ex3.client.gis.drawingcontexts.OSMDrawingContext
+import at.shehata.ex3.feature.geo.GeoObject
+import at.shehata.ex3.feature.geo.objectpart.Area
+import at.shehata.ex3.feature.geo.objectpart.GeoObjectPart
+import at.shehata.ex3.feature.geo.objectpart.Line
+import at.shehata.ex3.feature.geo.objectpart.Point
 import at.shehata.ex3.server.interfaces.Server
-import at.shehata.ex3.utils.*
 import org.intellij.lang.annotations.Language
 import org.postgis.Geometry
 import org.postgis.PGgeometry
@@ -14,21 +18,6 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.Statement
 import java.awt.Point as AwtPoint
-
-private enum class OSM_Landuse(value: Int) {
-	residential(5001),
-	industrial(5002),
-	commercial(5003),
-	forest(5004),
-	grass(5005),
-	meadow(5006)
-}
-
-private enum class OSM_Natural(value: Int) {
-	grassland(6001),
-	wood(6002),
-	water(6005)
-}
 
 @Language("SQL")
 private const val NATURAL_QUERY =
@@ -51,16 +40,15 @@ private const val HIGHWAY_QUERRY = "SELECT * FROM osm_highway " +
 private const val BUILDING_QUERY = "SELECT * FROM osm_building"
 
 class OSMServer : Server {
-	override val mDrawingContext
-		@get:JvmName("getDrawingContext") get() = mContext
+	override val mDrawingContext by lazy { OSMDrawingContext() }
 
-	private val mContext by lazy { OSMDrawingContext() }
-
-	init {
-		/* Load the JDBC driver. */
-		org.postgresql.Driver::javaClass
-	}
-
+	/**
+	 * Connects to the DB by logging in and
+	 * loads the datatypes needed for PostGIS
+	 *
+	 * @param _db the DB to connect to
+	 * @return the connection to the db
+	 */
 	private fun createConnection(_db: String): PGConnection {
 		val url = "jdbc:postgresql://localhost:5432/$_db"
 		val conn = DriverManager.getConnection(url, "geo", "geo")
@@ -70,6 +58,12 @@ class OSMServer : Server {
 		}
 	}
 
+	/**
+	 * converts a PostGIS polygon to a List of AWT Polygons
+	 *
+	 * @param _poly the PostGIS polygon to convert
+	 * @return a list of AWT Polygons
+	 */
 	private fun convertPolygon(_poly: org.postgis.Polygon): List<Polygon> {
 		val list = mutableListOf<Polygon>()
 		for (point in 0 until _poly.numRings()) {
@@ -87,6 +81,12 @@ class OSMServer : Server {
 		return list
 	}
 
+	/**
+	 * Converts a geometry object to the corresponding GeoObjectPart type
+	 *
+	 * @param _geom the geometry object to convert
+	 * @return a list of GeoObjectPart
+	 */
 	private fun extractObject(_geom: PGgeometry): List<GeoObjectPart> {
 		val wkt = _geom.toString()
 		return when (_geom.geoType) {
@@ -119,6 +119,14 @@ class OSMServer : Server {
 		}
 	}
 
+	/**
+	 * Executes the query and converts the results into a list
+	 * of GeoObjects
+	 *
+	 * @param _stmt the statement to execute the query on
+	 * @param _query the query to execute
+	 * @return the list of created GeoObjects
+	 */
 	private fun getObjects(_stmt: Statement, _query: String): List<GeoObject> {
 		val result = _stmt.executeQuery(_query)
 		val objects = mutableListOf<GeoObject>()

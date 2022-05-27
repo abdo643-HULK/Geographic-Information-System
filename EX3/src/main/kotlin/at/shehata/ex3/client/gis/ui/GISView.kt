@@ -1,9 +1,12 @@
-package at.shehata.ex3.client.gis
+package at.shehata.ex3.client.gis.ui
 
-import at.shehata.ex3.GISApplication
-import at.shehata.ex3.client.gis.components.BottomBar
-import at.shehata.ex3.client.gis.components.CanvasPane
-import at.shehata.ex3.client.gis.components.MenuBar
+import at.shehata.ex3.CANVAS_ID
+import at.shehata.ex3.OVERLAY_ID
+import at.shehata.ex3.client.gis.controller.GISController
+import at.shehata.ex3.client.gis.ui.components.BottomBar
+import at.shehata.ex3.client.gis.ui.components.CanvasPane
+import at.shehata.ex3.client.gis.ui.components.MenuBar
+import at.shehata.ex3.client.gis.ui.components.SCALE_FIELD_ID
 import at.shehata.ex3.client.interfaces.IDataObserver
 import javafx.embed.swing.SwingFXUtils
 import javafx.scene.canvas.Canvas
@@ -22,10 +25,6 @@ import java.awt.image.BufferedImage
  * @param mController the controller with the handlers for the elements
  */
 class GISView(private val mController: GISController) : IDataObserver, BorderPane() {
-	companion object {
-		const val SCALE_FIELD_ID = "scale-field"
-	}
-
 	/**
 	 * The image to render on the canvas
 	 */
@@ -56,7 +55,7 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
 	 */
 	fun repaint() {
 		val writable = SwingFXUtils.toFXImage(mImage, null)
-		val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+		val canvas = scene.lookup("#${CANVAS_ID}") as Canvas
 
 		canvas.graphicsContext2D.apply {
 			clearRect(0.0, 0.0, canvas.width, canvas.height)
@@ -64,8 +63,13 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
 		}
 	}
 
+	/**
+	 * Draws a Rectangle on the overlay canvas
+	 *
+	 * @param _rect The rectangle to render
+	 */
 	fun drawXOR(_rect: Rectangle2D) {
-		val overlay = scene.lookup("#${GISApplication.OVERLAY_ID}") as Canvas
+		val overlay = scene.lookup("#${OVERLAY_ID}") as Canvas
 		overlay.graphicsContext2D.apply {
 			clearRect(0.0, 0.0, scene.width, scene.height)
 			stroke = Color.AZURE
@@ -74,25 +78,40 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
 		}
 	}
 
+	/**
+	 * Clears the overlay canvas
+	 */
 	fun clearXOR() {
-		val overlay = scene.lookup("#${GISApplication.OVERLAY_ID}") as Canvas
+		val overlay = scene.lookup("#${OVERLAY_ID}") as Canvas
 		overlay.graphicsContext2D.apply {
 			clearRect(0.0, 0.0, scene.width, scene.height)
 		}
 	}
 
+	/**
+	 * Saves the context of the rendering canvas
+	 */
 	fun saveContext() {
-		val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+		val canvas = scene.lookup("#${CANVAS_ID}") as Canvas
 		canvas.graphicsContext2D.save()
 	}
 
+	/**
+	 * Restores the context of the rendering canvas
+	 */
 	fun restoreContext() {
-		val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+		val canvas = scene.lookup("#${CANVAS_ID}") as Canvas
 		canvas.graphicsContext2D.restore()
 	}
 
+	/**
+	 * Translates the rendering canvas by the giving delta in both direction
+	 *
+	 * @param _dX The amount to translate in X direction
+	 * @param _dY The amount to translate in Y direction
+	 */
 	fun translate(_dX: Double, _dY: Double) {
-		val canvas = scene.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+		val canvas = scene.lookup("#${CANVAS_ID}") as Canvas
 		val width = canvas.width
 		val height = canvas.height
 		val delta = 2.0
@@ -108,12 +127,13 @@ class GISView(private val mController: GISController) : IDataObserver, BorderPan
 	}
 
 	/**
-	 * updates the image on repaints the canvas
-	 * when it receives an update from the Subject
+	 * Updates the image and repaints the canvas
+	 * when it receives an update from the Subject.
+	 * It also updates the scale TextField
 	 */
 	override fun update(_img: Image, _scale: Int) {
 		mImage = _img as BufferedImage
-		(scene.lookup("#${SCALE_FIELD_ID}") as TextField).apply {
+		(scene.lookup("#$SCALE_FIELD_ID") as TextField).apply {
 			text = "$_scale"
 		}
 		repaint()

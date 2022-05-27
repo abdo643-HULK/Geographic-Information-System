@@ -1,4 +1,4 @@
-package at.shehata.ex3.utils
+package at.shehata.ex3.feature
 
 import java.awt.Point
 import java.awt.Polygon
@@ -278,6 +278,16 @@ data class Matrix(private val mMatrix: DoubleArray) {
 		return Point(product[0].toInt(), product[1].toInt())
 	}
 
+	/**
+	 * Multipliziert einen Punkt mit der Matrix und liefert das
+	 * Ergebnis der Multiplikation zurück
+	 *
+	 * @param _pt Der Punkt, der mit der Matrix multipliziert
+	 * werden soll
+	 * @return Ein neuer Punkt, der das Ergebnis der
+	 * Multiplikation repräsentiert
+	 * @see java.awt.geom.Point2D.Double
+	 */
 	fun multiply(_pt: Point2D.Double): Point2D.Double {
 		val destX = mMatrix[0 * MATRIX_COLUMNS + 0] * _pt.x + mMatrix[0 * MATRIX_COLUMNS + 1] * _pt.y
 		val destY = mMatrix[1 * MATRIX_COLUMNS + 0] * _pt.x + mMatrix[1 * MATRIX_COLUMNS + 1] * _pt.y

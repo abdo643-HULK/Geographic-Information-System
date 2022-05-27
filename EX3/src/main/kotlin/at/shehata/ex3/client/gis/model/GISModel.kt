@@ -1,11 +1,14 @@
-package at.shehata.ex3.client.gis
+package at.shehata.ex3.client.gis.model
 
-import at.shehata.ex3.client.gis.components.Server
 import at.shehata.ex3.client.interfaces.IDataObserver
-import at.shehata.ex3.server.DummyGIS
+import at.shehata.ex3.feature.Matrix
+import at.shehata.ex3.feature.geo.GeoObject
+import at.shehata.ex3.feature.geo.objectpart.Point
+import at.shehata.ex3.feature.poi.POIObject
+import at.shehata.ex3.feature.poi.POITypes
 import at.shehata.ex3.server.OSMServer
-import at.shehata.ex3.server.VerwaltungsgrenzenServer
-import at.shehata.ex3.utils.*
+import at.shehata.ex3.server.interfaces.Server
+import javafx.stage.Screen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -17,7 +20,6 @@ import java.awt.Rectangle
 import java.awt.geom.Point2D
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
-import at.shehata.ex3.server.interfaces.Server as IServer
 import java.awt.Point as AwtPoint
 
 private const val INCHES_PER_CENTIMETER = 2.54
@@ -28,8 +30,15 @@ private const val POI_IMAGE_WIDTH = 20
  * Contains the core logic that the controller calls
  */
 open class GISModel {
+	/**
+	 * A mutex to sync the variables
+	 * between the different coroutines
+	 */
 	private val mMutex = Mutex()
 
+	/**
+	 * Transformation Matrix of the World
+	 */
 	private var mWorldMatrix = Matrix()
 
 	/**
@@ -37,24 +46,31 @@ open class GISModel {
 	 */
 	private val mData = mutableListOf<GeoObject>()
 
+	/**
+	 * List of all POIs points to render
+	 */
 	private val mPOIData = mutableListOf<POIObject>()
 
-	private val mDotPerInch = 72.0
-
-	private val mPOIsImage = BufferedImage(POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, BufferedImage.TRANSLUCENT).apply {
-		val img = ImageIO.read(this@GISModel.javaClass.getResource("/POI.png"))
-		createGraphics().apply {
-			drawImage(img, 0, 0, POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, null)
-			dispose()
-		}
-	}
+	/**
+	 * The current screen DPI
+	 */
+	private val mDotPerInch = Screen.getPrimary().dpi // 72.0
 
 	/**
-	 * width and height of the image
+	 * width of the image
 	 */
 	private var mWidth: Int = 1
+
+	/**
+	 * height of the image
+	 */
 	private var mHeight: Int = 1
-	private var mServer: IServer = OSMServer()
+
+	/**
+	 * The current Server that provides the data and schema
+	 */
+	@set:JvmName("setServer")
+	var mServer: Server = OSMServer()
 
 	/**
 	 * The image that gets filled with polygons
@@ -70,7 +86,7 @@ open class GISModel {
 	/**
 	 * Creates an Image that gets rendered on the canvas
 	 */
-	fun initCanvas(): Image = BufferedImage(mWidth, mHeight, BufferedImage.TYPE_INT_RGB)
+	private fun initCanvas(): Image = BufferedImage(mWidth, mHeight, BufferedImage.TYPE_INT_RGB)
 
 	/**
 	 * sets the width of the image and repaints
@@ -94,34 +110,46 @@ open class GISModel {
 		zoomToFit()
 	}
 
-	fun setServer(_server: Server) {
-		mServer = when (_server) {
-			Server.OSM -> OSMServer()
-			Server.DUMMY_GIS -> DummyGIS()
-			Server.VERWALTUNGSGRENZEN -> VerwaltungsgrenzenServer()
-		}
-	}
-
+	/**
+	 * clears the current data and loads them from the selected server
+	 */
 	suspend fun loadData() = withContext(Dispatchers.IO) {
 		mData.clear()
 		mData += mServer.loadData()
 	}
 
-	suspend fun loadPOIData() = withContext(Dispatchers.Default) {
-		mPOIData += mutableListOf(
-			POIObject("0", POITypes.MOSQUE, Point(AwtPoint(1616032, 6168480))),
-			POIObject("1", POITypes.POST, Point(AwtPoint(1615736, 6168334))),
-			POIObject("2", POITypes.PUB, Point(AwtPoint(1615844, 6169376))),
-			POIObject("3", POITypes.SCHOOL, Point(AwtPoint(1615775, 6167628))),
-			POIObject("4", POITypes.SHOP, Point(AwtPoint(1615211, 6167746))),
+	/**
+	 * Loads the POI Image and adds the POI data to show
+	 */
+	suspend fun loadPOIData() = withContext(Dispatchers.IO) {
+		val img = BufferedImage(POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, BufferedImage.TRANSLUCENT).apply {
+			createGraphics().apply {
+				val img = this@GISModel.javaClass.getResource("/POI.png")
+				drawImage(ImageIO.read(img), 0, 0, POI_IMAGE_WIDTH, POI_IMAGE_HEIGHT, null)
+				dispose()
+			}
+		}
+
+		mPOIData += listOf(
+			POIObject(img, "0", POITypes.MOSQUE, Point(AwtPoint(1616032, 6168480))),
+			POIObject(img, "1", POITypes.POST, Point(AwtPoint(1615736, 6168334))),
+			POIObject(img, "2", POITypes.PUB, Point(AwtPoint(1615844, 6169376))),
+			POIObject(img, "3", POITypes.SCHOOL, Point(AwtPoint(1615775, 6167628))),
+			POIObject(img, "4", POITypes.SHOP, Point(AwtPoint(1615211, 6167746))),
 		)
 	}
 
+	/**
+	 * Loads the data of the currently shown part of the map from the server (clipping)
+	 */
 	suspend fun loadAreaData() = withContext(Dispatchers.Default) {
 		mData.clear()
 		mData += mServer.getArea(mWorldMatrix.inverse() * Rectangle(0, 0, mWidth, mHeight))
 	}
 
+	/**
+	 * Hides the POI by creating a new image and clearing the POI data
+	 */
 	suspend fun hidePOI() {
 		mImage = initCanvas()
 		mPOIData.clear()
@@ -141,14 +169,13 @@ open class GISModel {
 
 			mMutex.withLock {
 				mData.forEach {
-					val values = context.getSchema(it.mType) ?: context.getDefaultSchema()
-					values.paint(graphics, it, mWorldMatrix)
+					context.getSchema(it.mType).paint(graphics, it, mWorldMatrix)
 				}
 
 				mPOIData.forEach {
 					val pt = (it.mObjects[0] as Point).mGeometry
 					val pos = mWorldMatrix * AwtPoint(pt.x, pt.y)
-					graphics.drawImage(mPOIsImage, pos.x, pos.y, null)
+					graphics.drawImage(it.mImage, pos.x, pos.y, null)
 				}
 			}
 		}
@@ -192,33 +219,33 @@ open class GISModel {
 	}
 
 	/**
-	 * Veraendert die interne Transformationsmatrix so, dass an dem
-	 * uebergebenen Punkt herein- bzw. herausgezoomt wird
+	 * Verändert die interne Transformationsmatrix so, dass an dem
+	 * übergebenen Punkt herein- bzw. herausgezoomt wird
 	 *
 	 * @param _pt Der Punkt an dem herein- bzw. herausgezoomt wird
 	 * @param _factor Der Faktor um den herein- bzw. herausgezoomt wird
 	 *
 	 * @see java.awt.Point
 	 */
-	fun zoom(_pt: AwtPoint, _factor: Double) {
+	fun zoom(_pt: java.awt.Point, _factor: Double) {
 		mImage = initCanvas()
 		mWorldMatrix = Matrix.zoomPoint(mWorldMatrix, _pt, _factor)
 	}
 
-	suspend fun zoomNonBlock(_pt: AwtPoint, _factor: Double) = withContext(Dispatchers.Default) {
+	suspend fun zoomNonBlock(_pt: java.awt.Point, _factor: Double) = withContext(Dispatchers.Default) {
 		zoom(_pt, _factor)
 		repaint()
 	}
 
 	/**
-	 * Veraendert die interne Transformationsmatrix so, dass in das
+	 * Verändert die interne Transformationsmatrix so, dass in das
 	 * Zentrum des Anzeigebereiches herein- bzw. herausgezoomt wird
 	 *
 	 * @param _factor Der Faktor um den herein- bzw. herausgezoomt wird
 	 */
 	fun zoom(_factor: Double) {
 		mImage = initCanvas()
-		mWorldMatrix = Matrix.zoomPoint(mWorldMatrix, AwtPoint(mWidth / 2, mHeight / 2), _factor)
+		mWorldMatrix = Matrix.zoomPoint(mWorldMatrix, java.awt.Point(mWidth / 2, mHeight / 2), _factor)
 	}
 
 	suspend fun zoomNonBlock(_factor: Double) = withContext(Dispatchers.Default) {
@@ -227,7 +254,7 @@ open class GISModel {
 	}
 
 	/**
-	 * Stellt intern eine Transformationsmatrix zur Verfuegung, die so
+	 * Stellt intern eine Transformationsmatrix zur Verfügung, die so
 	 * skaliert, verschiebt und spiegelt, dass die zu zeichnenden Polygone
 	 * komplett in den Anzeigebereich passen
 	 */
@@ -235,7 +262,7 @@ open class GISModel {
 		mImage = initCanvas()
 		mWorldMatrix = Matrix.zoomToFit(
 			getMapBounds(mData),
-			Rectangle(0, 0, mWidth, mHeight)
+			Rectangle(0, 3, mWidth, mHeight - 8)
 		)
 	}
 
@@ -245,10 +272,10 @@ open class GISModel {
 	}
 
 	/**
-	 * Stellt intern eine Transformationsmatrix zur Verfuegung, die so
+	 * Stellt intern eine Transformationsmatrix zur Verfügung, die so
 	 * skaliert, verschiebt und spiegelt, dass die zu zeichnenden Polygone
 	 * innerhalb eines definierten Rechtecks (_winBounds) komplett in den
-	 * Anzeigebereich (die Zeichenflaeche) passen
+	 * Anzeigebereich (die Zeichenfläche) passen
 	 *
 	 * @param _mapBounds Der darzustellende Bereich in Bildschirm-Koordinaten
 	 */
@@ -263,7 +290,7 @@ open class GISModel {
 	}
 
 	/**
-	 * Stellt intern eine Transformationsmatrix zur Verfuegung, die so
+	 * Stellt intern eine Transformationsmatrix zur Verfügung, die so
 	 * skaliert, verschiebt und spiegelt, dass die zu zeichnenden Polygone
 	 * komplett in den Anzeigebereich passen
 	 */
@@ -271,7 +298,7 @@ open class GISModel {
 		mImage = initCanvas()
 		mWorldMatrix = Matrix.zoomPoint(
 			mWorldMatrix,
-			AwtPoint(mWidth / 2, mHeight / 2),
+			java.awt.Point(mWidth / 2, mHeight / 2),
 			calculateScale() / _scale.toDouble()
 		)
 	}
@@ -282,7 +309,7 @@ open class GISModel {
 	}
 
 	/**
-	 * Veraendert die interne Transformationsmatrix so, dass
+	 * Verändert die interne Transformationsmatrix so, dass
 	 * die zu zeichnenden Objekt horizontal verschoben werden.
 	 *
 	 * @param _delta Die Strecke, um die horizontal verschoben werden soll
@@ -298,7 +325,7 @@ open class GISModel {
 	}
 
 	/**
-	 * Veraendert die interne Transformationsmatrix so, dass
+	 * Verändert die interne Transformationsmatrix so, dass
 	 * die zu zeichnenden Objekt vertikal verschoben werden.
 	 *
 	 * @param _delta Die Strecke, um die vertikal verschoben werden soll
@@ -313,6 +340,12 @@ open class GISModel {
 		repaint()
 	}
 
+	/**
+	 * Changes the internal matrix so that it rotates
+	 * by the provided angle
+	 *
+	 * @param _alpha the angle to rotate by
+	 */
 	fun rotate(_alpha: Double) {
 		val centerX = mWidth / 2.0
 		val centerY = mHeight / 2.0
@@ -337,18 +370,15 @@ open class GISModel {
 	 * @return Die BoundingBox
 	 */
 	fun getMapBounds(_geoObj: List<GeoObject>): Rectangle {
-		if (_geoObj.isEmpty()) return Rectangle(0, 0, mWidth, mHeight)
-		val boundingBox = _geoObj[0].mBounds[0].apply {
-			_geoObj.drop(1).forEach { g ->
-				g.mBounds.forEach { add(it) }
+		return when (_geoObj.isEmpty()) {
+			true -> Rectangle(0, 0, mWidth, mHeight)
+			false -> _geoObj[0].mBounds.apply {
+				_geoObj
+					.iterator()
+					.apply { next() }
+					.forEach { add(it.mBounds) }
 			}
 		}
-
-//		_geoObj.forEach { g ->
-//			g.mBounds.forEach { boundingBox.add(it) }
-//		}
-
-		return boundingBox
 	}
 
 	suspend fun getMapBoundsNonBlocking(_poly: List<GeoObject>): Rectangle = withContext(Dispatchers.Default) {
@@ -377,5 +407,5 @@ open class GISModel {
 	 * @return Der gleiche Punkt im Weltkoordinatensystem
 	 * @see java.awt.Point
 	 */
-	fun getMapPoint(_pt: AwtPoint) = mWorldMatrix.inverse() * _pt
+	fun getMapPoint(_pt: java.awt.Point) = mWorldMatrix.inverse() * _pt
 }

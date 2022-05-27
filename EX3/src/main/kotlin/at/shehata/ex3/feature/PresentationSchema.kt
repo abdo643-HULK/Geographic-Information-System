@@ -1,7 +1,6 @@
-package at.shehata.ex3.client.gis
+package at.shehata.ex3.feature
 
-import at.shehata.ex3.utils.GeoObject
-import at.shehata.ex3.utils.Matrix
+import at.shehata.ex3.feature.geo.GeoObject
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Graphics2D
@@ -14,11 +13,11 @@ data class PresentationSchema(
 ) {
 	fun paint(_g: Graphics2D, _obj: GeoObject, _m: Matrix) {
 		val area = AwtArea()
+		_g.stroke = BasicStroke(mLineWidth)
 		_g.color = mFillColor
 		_obj.mObjects.forEach { it.draw(_g, _m, area) }
 		_g.fill(area)
 		_g.color = mLineColor
-		_g.stroke = BasicStroke(mLineWidth)
 		_g.draw(area)
 
 	}

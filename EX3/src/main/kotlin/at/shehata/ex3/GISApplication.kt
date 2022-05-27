@@ -1,11 +1,26 @@
 package at.shehata.ex3
 
-import at.shehata.ex3.client.gis.GISController
-import at.shehata.ex3.client.gis.GISModel
-import at.shehata.ex3.client.gis.GISView
+import at.shehata.ex3.client.gis.controller.GISController
+import at.shehata.ex3.client.gis.model.GISModel
+import at.shehata.ex3.client.gis.ui.GISView
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.stage.Stage
+
+/**
+ * The ID of the Canvas for lookup
+ */
+const val CANVAS_ID = "my-canvas"
+/**
+ * The ID of the Overlay Canvas for lookup
+ */
+const val OVERLAY_ID = "OVERLAY"
+
+/**
+ * Initial size of the Scene
+ */
+const val SCENE_HEIGHT = 480.0 * 1.205
+const val SCENE_WIDTH = 740.0
 
 /**
  * The single instance of the application that runs
@@ -19,18 +34,6 @@ class GISApplication : Application() {
          */
         @JvmStatic
         fun main(_args: Array<String>) = launch(GISApplication::class.java)
-
-        /**
-         * The ID of the Canvas for lookup
-         */
-        const val CANVAS_ID = "my-canvas"
-        const val OVERLAY_ID = "my-canvas-overlay"
-
-        /**
-         * Initial size of the Scene
-         */
-        const val SCENE_HEIGHT = 480.0 * 1.205
-        const val SCENE_WIDTH = 740.0
     }
 
     /**

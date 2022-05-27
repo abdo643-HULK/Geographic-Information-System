@@ -1,10 +1,10 @@
 package at.shehata.ex3.server
 
 import at.shehata.ex3.client.gis.drawingcontexts.DummyDrawingContext
+import at.shehata.ex3.feature.geo.objectpart.Area
+import at.shehata.ex3.feature.geo.GeoObject
+import at.shehata.ex3.feature.SerializableGeoObject
 import at.shehata.ex3.server.interfaces.Server
-import at.shehata.ex3.utils.Area
-import at.shehata.ex3.utils.GeoObject
-import at.shehata.ex3.utils.SerializableGeoObject
 import de.intergis.JavaClient.comm.CgConnection
 import de.intergis.JavaClient.comm.CgError
 import de.intergis.JavaClient.gui.IgcConnection
@@ -19,6 +19,9 @@ import java.util.*
 import java.util.concurrent.TimeoutException
 import kotlin.concurrent.schedule
 
+/**
+ * Statements used to test with the DummyGIS
+ */
 private val ROUTES = mapOf(
 	"select * from data where type = 1101" to "./1.json",
 	"select * from data where type in (233, 933, 934, 1101)" to "./2.json",
@@ -41,10 +44,7 @@ private val ROUTES = mapOf(
  * Client class that calls the Server for the data to draw
  */
 open class DummyGIS : Server {
-	override val mDrawingContext
-		@get:JvmName("getDrawingContext") get() = mContext
-
-	private val mContext by lazy { DummyDrawingContext() }
+	override val mDrawingContext by lazy { DummyDrawingContext() }
 
 	/**
 	 * Create a connection to the Geo-Server,
@@ -95,8 +95,6 @@ open class DummyGIS : Server {
 		return false
 	}
 
-//    fun init() = true
-
 	override fun loadData() = when (init()) {
 		true -> extractData("SELECT * FROM data WHERE type in (233, 931, 932, 933, 934, 1101)")
 			?.map { GeoObject(it.mId, it.mType, listOf(Area(it.mPoly, emptyList()))) } ?: emptyList()
@@ -109,7 +107,7 @@ open class DummyGIS : Server {
 	 * Extracts GeoObjects from the Server
 	 *
 	 * @return if everything works fine a list of the objects or null if something fails
-	 * @see at.shehata.ex2.utils.GeoObject
+	 * @see at.shehata.ex3.feature.SerializableGeoObject
 	 */
 	@OptIn(ExperimentalSerializationApi::class)
 	fun extractData(_stmt: String): List<SerializableGeoObject>? {
@@ -143,6 +141,11 @@ open class DummyGIS : Server {
 	}
 
 
+	/**
+	 * Helper class to have offline support
+	 * for the data. It writes the Data into a
+	 * json file
+	 */
 	@OptIn(ExperimentalSerializationApi::class)
 	fun loadDataToJson() {
 		ROUTES.entries.forEach {

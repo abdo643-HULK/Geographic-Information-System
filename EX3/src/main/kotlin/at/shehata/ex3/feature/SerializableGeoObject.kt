@@ -1,4 +1,4 @@
-package at.shehata.ex3.utils
+package at.shehata.ex3.feature
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -7,7 +7,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import java.awt.Polygon
-import java.awt.Rectangle
 
 @Serializable
 private data class Poly(val mXpoints: IntArray, val mYpoints: IntArray, val mNpoints: Int)
@@ -32,8 +31,11 @@ private object PolygonSerializer : KSerializer<Polygon> {
 	}
 }
 
+/**
+ * Class used to create/parse the JSON created from the DummyGIS data
+ */
 @Serializable
-open class SerializableGeoObject(
+data class SerializableGeoObject(
 	/**
 	 * Liefert die Id des Geo-Objektes
 	 *
@@ -59,51 +61,3 @@ open class SerializableGeoObject(
 	@Serializable(with = PolygonSerializer::class)
 	val mPoly: Polygon,
 )
-
-/**
- * Class for the Data from the Server
- */
-open class GeoObject(
-	/**
-	 * Liefert die Id des Geo-Objektes
-	 *
-	 * @return Die Id des Objektes
-	 * @see java.lang.String
-	 */
-	@get:JvmName("getId")
-	val mId: String,
-
-	/**
-	 * Liefert den Typ des Geo-Objektes
-	 *
-	 * @return Der Typ des Objektes
-	 */
-	@get:JvmName("getType")
-	val mType: Int,
-
-	@get:JvmName("getObject")
-	val mObjects: List<GeoObjectPart>,
-) {
-	/**
-	 * Liefert die Bounding Box der Geometrie
-	 *
-	 * @return die Bounding Box der Geometrie als Rechteckobjekt
-	 * @see java.awt.Rectangle
-	 */
-	@get:JvmName("getBounds")
-	val mBounds: List<Rectangle>
-		@Throws(Error::class)
-		get() = mObjects.mapNotNull {
-			when (it) {
-				is Area -> it.mGeometry.bounds
-				is Line -> Rectangle(it.mGeometry[0].x, it.mGeometry[0].y, 1, 1).apply {
-					it.mGeometry.forEach { pt -> add(pt.x, pt.y) }
-				}
-				is Point -> Rectangle(it.mGeometry.x, it.mGeometry.y, 1, 1)
-				else -> null
-			}
-		}
-
-	override fun toString(): String =
-		"GeoObject(mId=$mId,mType=$mType,mObject=${mObjects.toTypedArray().contentToString()})"
-}

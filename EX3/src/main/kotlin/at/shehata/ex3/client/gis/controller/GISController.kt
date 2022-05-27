@@ -1,8 +1,14 @@
-package at.shehata.ex3.client.gis
+package at.shehata.ex3.client.gis.controller
 
-import at.shehata.ex3.GISApplication
-import at.shehata.ex3.client.gis.components.ButtonActions
-import at.shehata.ex3.client.gis.components.Server
+import at.shehata.ex3.CANVAS_ID
+import at.shehata.ex3.client.gis.model.GISModel
+import at.shehata.ex3.client.gis.ui.GISView
+import at.shehata.ex3.client.gis.ui.components.ButtonActions
+import at.shehata.ex3.client.gis.ui.components.SCALE_FIELD_ID
+import at.shehata.ex3.client.gis.ui.components.Server
+import at.shehata.ex3.server.DummyGIS
+import at.shehata.ex3.server.OSMServer
+import at.shehata.ex3.server.VerwaltungsgrenzenServer
 import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
@@ -51,6 +57,9 @@ class GISController(
 	private val mKeyHandler by lazy { KeyHandler() }
 	private val mScrollHandler by lazy { ScrollHandler() }
 
+	/**
+	 * The current view
+	 */
 	lateinit var mView: GISView
 
 	/**
@@ -85,6 +94,12 @@ class GISController(
 	 */
 	fun getKeyHandler() = mKeyHandler
 
+	/**
+	 * Returns the Singleton of the ScrollHandler
+	 *
+	 * @return The ScrollHandler
+	 * @see ScrollHandler
+	 */
 	fun getScrollHandler() = mScrollHandler
 
 
@@ -93,10 +108,19 @@ class GISController(
 	 * calls the model to generate a house on a random position
 	 */
 	inner class ActionHandler : EventHandler<ActionEvent> {
+		/**
+		 * The current state of the POI visibility
+		 */
 		private var mIsPOIOn = false
+
+		/**
+		 * The current state of sticky
+		 */
 		private var mIsSticky = false
 
-		@Suppress("MagicNumber")
+		/**
+		 * checks the event source and calls the handler for it
+		 */
 		override fun handle(_event: ActionEvent) {
 			when (_event.source) {
 				is Button -> bottomBarHandler(_event)
@@ -104,9 +128,25 @@ class GISController(
 			}
 		}
 
-		private fun menuBarHandler(_event: ActionEvent) =
-			mModel.setServer(Server.valueOf((_event.source as RadioMenuItem).id))
+		/**
+		 * Checks the event source id and converts it to the enum
+		 * value and sets the model server
+		 *
+		 * @param _event the ActionEvent that triggered it
+		 */
+		private fun menuBarHandler(_event: ActionEvent) {
+			mModel.mServer = when (Server.valueOf((_event.source as RadioMenuItem).id)) {
+				Server.OSM -> OSMServer()
+				Server.DUMMY_GIS -> DummyGIS()
+				Server.VERWALTUNGSGRENZEN -> VerwaltungsgrenzenServer()
+			}
+		}
 
+		/**
+		 * Handles the bottom bar button clicks
+		 *
+		 * @param _event the ActionEvent that triggered it
+		 */
 		private fun bottomBarHandler(_event: ActionEvent) {
 			when (ButtonActions.valueOf((_event.source as Button).id)) {
 				ButtonActions.SAVE -> saveToFile()
@@ -126,6 +166,7 @@ class GISController(
 				ButtonActions.DRAW -> {
 					mScope.launch {
 						mModel.loadData()
+						mModel.zoomToFit()
 						mModel.repaint()
 					}
 				}
@@ -171,18 +212,23 @@ class GISController(
 			}
 		}
 
+		/**
+		 * Saves the Canvas as a png file using the FileChooser
+		 *
+		 * @see javafx.stage.FileChooser
+		 */
 		private fun saveToFile() {
 			FileChooser().apply {
 				title = "Save"
 				extensionFilters += FileChooser.ExtensionFilter("PNG", "*.png")
-				var file = showSaveDialog(mView.scene.window) ?: return@apply
-				file = if (!file.endsWith(".png")) File(file.absolutePath + ".png") else file
+				val file = showSaveDialog(mView.scene.window)?.apply {
+					if (!name.endsWith(".png")) renameTo(File("$absolutePath.png"))
+				} ?: return@apply
 				try {
-					val canvas = mView.lookup("#${GISApplication.CANVAS_ID}") as Canvas
+					val canvas = mView.lookup("#${CANVAS_ID}") as Canvas
 					val writableImage = WritableImage(canvas.width.toInt(), canvas.height.toInt())
 					canvas.snapshot(null, writableImage)
-					val renderedImage = SwingFXUtils.fromFXImage(writableImage, null)
-					ImageIO.write(renderedImage, "png", file)
+					ImageIO.write(SwingFXUtils.fromFXImage(writableImage, null), "png", file)
 				} catch (_e: IOException) {
 					_e.printStackTrace()
 				}
@@ -195,12 +241,29 @@ class GISController(
 	 * calls the model to render a house on the position off the click
 	 */
 	inner class MouseHandler : EventHandler<MouseEvent> {
+		/**
+		 * stores the difference between each drag
+		 */
 		private val mDeltaDrag = Point()
+
+		/**
+		 * stores the position of the pressed Event
+		 */
 		private val mStartPoint = Point()
+
+		/**
+		 * stores the size of the overlay rect
+		 */
 		private val mOverlayRect = Rectangle()
 
+		/**
+		 * owner for the clipboard
+		 */
 		private val mOwner = StringSelection("GIS")
 
+		/**
+		 * handles press/drag/release events of the mouse
+		 */
 		override fun handle(_event: MouseEvent) {
 			when (_event.eventType) {
 				MouseEvent.MOUSE_PRESSED -> mousePressedHandler(_event)
@@ -210,6 +273,13 @@ class GISController(
 		}
 
 
+		/**
+		 * Sets the properties and checks which mouse button
+		 * has been pressed to either save the canvas
+		 * or to save to the clipboard
+		 *
+		 * @param _event the event of handle
+		 */
 		private fun mousePressedHandler(_event: MouseEvent) {
 			val x = _event.x.toInt()
 			val y = _event.y.toInt()
@@ -225,6 +295,12 @@ class GISController(
 			}
 		}
 
+		/**
+		 * Translates the canvas or draws the overlay rect
+		 * depending on the button
+		 *
+		 * @param _event the event of handle
+		 */
 		private fun mouseDraggedHandler(_event: MouseEvent) {
 			mView.cursor = when (_event.button) {
 				MouseButton.PRIMARY -> {
@@ -252,6 +328,13 @@ class GISController(
 			}
 		}
 
+		/**
+		 * Finishes the translation of the canvas or
+		 * zooms and clears the overlay depending on
+		 * the hold button on release
+		 *
+		 * @param _event the event of handle
+		 */
 		private fun mouseReleaseHandler(_event: MouseEvent) {
 			val deltaX = _event.x.toInt() - mStartPoint.x
 			val deltaY = _event.y.toInt() - mStartPoint.y
@@ -272,6 +355,13 @@ class GISController(
 			mView.cursor = Cursor.DEFAULT
 		}
 
+		/**
+		 * Calculates the size of the overlay rect and sets it to that
+		 *
+		 * @param _event the event of handle
+		 * @param _deltaX the difference between the current x position and start position
+		 * @param _deltaY the difference between the current y position and start position
+		 */
 		private fun setOverlay(_event: MouseEvent, _deltaX: Int, _deltaY: Int) {
 			val (x, width) = when {
 				_deltaX < 0 -> _event.x to mStartPoint.x - _event.x
@@ -288,6 +378,11 @@ class GISController(
 			mOverlayRect.setRect(x, y, width, height)
 		}
 
+		/**
+		 * Saves the current mouse position in the clipboard
+		 *
+		 * @param _event the event of handle
+		 */
 		private fun saveToClipboard(_event: MouseEvent) {
 			Toolkit.getDefaultToolkit().systemClipboard.apply {
 				val data = mModel.getMapPoint(Point(_event.x.toInt(), _event.y.toInt())).let { "(${it.x},${it.y})\n" }
@@ -306,6 +401,10 @@ class GISController(
 	 * It translates and rotates when the correct Key is clicked
 	 */
 	inner class KeyHandler : EventHandler<KeyEvent> {
+
+		/**
+		 * handles the key released/pressed events
+		 */
 		override fun handle(_event: KeyEvent) {
 			when (_event.eventType) {
 				KeyEvent.KEY_RELEASED -> handleKeyReleased(_event)
@@ -315,14 +414,21 @@ class GISController(
 
 		/**
 		 * helper function for Key_Released
-		 * Handles Scrolling, when LEFT, DOWN, RIGHT or UP is clicked
 		 * Handles Rotating, when R is clicked
+		 * Handles Zooming, when ENTER is clicked
+		 * inside the Scale-TextField
+		 *
+		 * @param _event the event of handle
 		 */
 		private fun handleKeyReleased(_event: KeyEvent) {
+			val source = _event.source
 			when (_event.code) {
 				KeyCode.R -> if (_event.isShiftDown) mModel.rotate(-PI / 2) else mModel.rotate(PI / 2)
-				KeyCode.ENTER -> when (_event.source) {
-					is TextField -> mModel.zoomToScale((_event.source as TextField).text.toInt())
+				KeyCode.ENTER -> when (source) {
+					is TextField -> when (source.id) {
+						SCALE_FIELD_ID -> mModel.zoomToScale(source.text.toInt())
+						else -> return
+					}
 					else -> return
 				}
 				else -> return
@@ -333,6 +439,8 @@ class GISController(
 		/**
 		 * helper function for Key_Press
 		 * Handles Scrolling, when A, S, D or W is clicked
+		 *
+		 * @param _eventCode The code of the clicked Button
 		 */
 		private fun handleKeyPress(_eventCode: KeyCode) {
 			when (_eventCode) {
@@ -347,6 +455,11 @@ class GISController(
 	}
 
 	inner class ScrollHandler : EventHandler<ScrollEvent> {
+
+		/**
+		 * Zooms in and out on the current mouse position
+		 * depending on the mousewheel direction
+		 */
 		override fun handle(_event: ScrollEvent) {
 			val pt = Point(_event.x.toInt(), _event.y.toInt())
 			val factor = if (_event.deltaY > 0) 1.1 else 1 / 1.1
@@ -359,6 +472,10 @@ class GISController(
 	 * handler that listens for resizes of the canvas
 	 */
 	inner class ChangeHandler : ChangeListener<Number> {
+
+		/**
+		 * Updates the size of the drawing image
+		 */
 		override fun changed(_observable: ObservableValue<out Number>, _oldValue: Number, _newValue: Number) {
 			when ((_observable as ReadOnlyDoubleProperty).name) {
 				"width" -> mModel.setWidth(_newValue.toInt())
