@@ -13,9 +13,6 @@ group('at.shehata')
 
 repositories {
     mavenCentral()
-    flatDir {
-        dirs('libs')
-    }
 }
 
 ext {
@@ -45,8 +42,6 @@ javafx {
 }
 
 dependencies {
-    def libs = fileTree('libs') { include '*.jar' }
-    implementation(libs)
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-javafx
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.6.1")
     // https://github.com/Kotlin/kotlinx.serialization#dependency-on-the-json-library
@@ -83,9 +78,6 @@ mainClassName = 'at.shehata.ex3.GISApplication'
 
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    exclude("*.sql")
-    exclude("*.csv")
 
     manifest {
         attributes 'Main-Class': 'at.shehata.ex3.LauncherKt'

@@ -1,0 +1,3 @@
+[*.{kt,kts}]
+chain-wrapping = true
+no-blank-lines-in-chained-method-calls = true

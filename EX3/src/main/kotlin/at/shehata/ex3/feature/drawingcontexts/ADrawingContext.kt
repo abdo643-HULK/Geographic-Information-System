@@ -1,4 +1,4 @@
-package at.shehata.ex3.client.gis.drawingcontexts
+package at.shehata.ex3.feature.drawingcontexts
 
 import at.shehata.ex3.feature.PresentationSchema
 import java.awt.Color

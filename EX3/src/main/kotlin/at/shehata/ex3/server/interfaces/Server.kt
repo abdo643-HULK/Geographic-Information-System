@@ -1,6 +1,6 @@
 package at.shehata.ex3.server.interfaces
 
-import at.shehata.ex3.client.gis.drawingcontexts.ADrawingContext
+import at.shehata.ex3.feature.drawingcontexts.ADrawingContext
 import at.shehata.ex3.feature.geo.GeoObject
 import java.awt.Rectangle
 

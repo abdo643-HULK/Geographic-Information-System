@@ -1,6 +1,6 @@
 package at.shehata.ex3.server
 
-import at.shehata.ex3.client.gis.drawingcontexts.DummyDrawingContext
+import at.shehata.ex3.feature.drawingcontexts.DummyDrawingContext
 import at.shehata.ex3.feature.geo.objectpart.Area
 import at.shehata.ex3.feature.geo.GeoObject
 import at.shehata.ex3.feature.SerializableGeoObject
