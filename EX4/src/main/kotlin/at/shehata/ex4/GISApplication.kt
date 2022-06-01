@@ -1,7 +1,7 @@
 package at.shehata.ex4
 
 import at.shehata.ex4.model.GISModel
-import at.shehata.ex4.ui.GISView
+import at.shehata.ex4.ui.views.GNSSView
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.stage.Stage
@@ -35,14 +35,14 @@ class GISApplication : Application() {
 	/**
 	 * Holds our View for init
 	 */
-	private lateinit var mRoot: GISView
+	private lateinit var mRoot: GNSSView
 
 	/**
 	 * initializes the MVC Objects
 	 */
 	override fun init() {
 		val model = GISModel()
-		mRoot = GISView()
+		mRoot = GNSSView()
 		model.addMapObserver(mRoot)
 	}
 

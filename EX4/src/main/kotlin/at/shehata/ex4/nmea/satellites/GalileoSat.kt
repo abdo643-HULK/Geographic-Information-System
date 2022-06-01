@@ -11,4 +11,7 @@ class GalileoSat(
 	mAzimuth,
 	mSNR
 ) {
+	companion object {
+		const val ID = "GA"
+	}
 }

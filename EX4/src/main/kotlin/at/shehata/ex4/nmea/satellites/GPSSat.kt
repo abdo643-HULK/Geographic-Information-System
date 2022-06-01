@@ -11,4 +11,7 @@ data class GPSSat(
 	mAzimuth,
 	mSNR
 ) {
+	companion object {
+		const val ID = "GP"
+	}
 }

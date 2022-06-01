@@ -11,4 +11,7 @@ class BeidouSat(
 	mAzimuth,
 	mSNR
 ) {
+	companion object {
+		const val ID = "BD"
+	}
 }

@@ -1,5 +1,6 @@
 package at.shehata.ex4.nmea
 
+import at.shehata.ex4.nmea.messages.GGA
 import at.shehata.ex4.nmea.satellites.SatelliteInfo
 import java.nio.CharBuffer
 
@@ -11,6 +12,6 @@ data class NMEAInfo(
 	var mPDOP: Float? = null,
 	var mHDOP: Float? = null,
 	var mVDOP: Float? = null,
-	var mQuality: FixQuality? = null,
+	var mQuality: GGA.FixQuality? = null,
 	val mList: MutableList<SatelliteInfo> = mutableListOf()
 )

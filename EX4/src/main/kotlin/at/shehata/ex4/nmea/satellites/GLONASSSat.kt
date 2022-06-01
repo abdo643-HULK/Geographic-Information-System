@@ -11,4 +11,7 @@ class GLONASSSat(
 	mAzimuth,
 	mSNR
 ) {
+	companion object {
+		const val ID = "GL"
+	}
 }
