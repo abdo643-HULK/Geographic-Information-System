@@ -1,9 +1,10 @@
 package at.shehata.ex4
 
-import at.shehata.ex4.model.GISModel
+import at.shehata.ex4.nmea.NMEAParser
 import at.shehata.ex4.ui.views.GNSSView
 import javafx.application.Application
 import javafx.scene.Scene
+import javafx.scene.text.Font
 import javafx.stage.Stage
 
 /**
@@ -28,8 +29,12 @@ class GISApplication : Application() {
 		/**
 		 * Initial size of the Scene
 		 */
-		const val SCENE_HEIGHT = 480.0 * 1.205
-		const val SCENE_WIDTH = 740.0
+		const val SCENE_HEIGHT = 520.0
+
+		//		const val SCENE_WIDTH = 720.0
+		const val SCENE_WIDTH = 860.0
+
+		const val DEFAULT_FONT_FAMILY = "Iosevka Nerd Font"
 	}
 
 	/**
@@ -37,13 +42,25 @@ class GISApplication : Application() {
 	 */
 	private lateinit var mRoot: GNSSView
 
+	private inline fun loadFonts() {
+		arrayOf("Iosevka_Nerd_Font_Complete", "Iosevka_Bold_Nerd_Font_Complete").forEach {
+			javaClass
+				.getResource("/fonts/$it.ttf")
+				?.apply { Font.loadFont(toExternalForm(), 10.0) }
+		}
+	}
+
 	/**
 	 * initializes the MVC Objects
 	 */
 	override fun init() {
-		val model = GISModel()
-		mRoot = GNSSView()
-		model.addMapObserver(mRoot)
+		loadFonts()
+
+		mRoot = GNSSView(
+			NMEAParser().apply {
+				parse()
+			}
+		)
 	}
 
 	/**
@@ -51,7 +68,6 @@ class GISApplication : Application() {
 	 */
 	override fun start(_stage: Stage) {
 		val main = Scene(mRoot, SCENE_WIDTH, SCENE_HEIGHT)
-
 		_stage.title = "GIS"
 		_stage.scene = main
 		_stage.show()

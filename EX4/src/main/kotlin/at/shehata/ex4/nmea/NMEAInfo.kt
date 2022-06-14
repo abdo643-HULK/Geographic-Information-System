@@ -6,12 +6,13 @@ import java.nio.CharBuffer
 
 data class NMEAInfo(
 	var mTime: CharBuffer? = null,
-	var mWidth: Float? = null,
-	var mHeight: Float? = null,
+	var mLatitude: Float? = null,
+	var mLongitude: Float? = null,
+	var mAltitude: Float? = null,
 	var mSatelliteCount: UInt? = null,
 	var mPDOP: Float? = null,
 	var mHDOP: Float? = null,
 	var mVDOP: Float? = null,
 	var mQuality: GGA.FixQuality? = null,
-	val mList: MutableList<SatelliteInfo> = mutableListOf()
+	val mSatellites: MutableList<SatelliteInfo> = mutableListOf()
 )
