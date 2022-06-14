@@ -264,6 +264,7 @@ open class GISModel {
 			getMapBounds(mData),
 			Rectangle(0, 3, mWidth, mHeight - 8)
 		)
+		println(mWorldMatrix)
 	}
 
 	suspend fun zoomToFitNonBlock() = withContext(Dispatchers.Default) {
