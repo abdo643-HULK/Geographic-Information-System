@@ -4,6 +4,16 @@ import at.shehata.ex4.nmea.SatType
 import at.shehata.ex4.nmea.interfaces.Message
 import java.nio.CharBuffer
 
+/**
+ * Object that parses and holds the data of a GSA message
+ *
+ * @param mSelectionMode
+ * @param mMode
+ * @param mIds Ids of the Satellites used to calculate
+ * @param mPDOP Position Dilution Of Precision (3D)
+ * @param mHDOP Horizontal Dilution Of Precision (2D)
+ * @param mVDOP Vertical Dilution Of Precision (1D)
+ */
 data class GSA(
 	val mSelectionMode: Char,
 	val mMode: UInt,
@@ -13,6 +23,14 @@ data class GSA(
 	val mVDOP: Float?,
 ) : Message {
 	companion object {
+		/**
+		 * Takes a GSA sentence and returns a GSA Object
+		 *
+		 * @param _buffer the sentence to parse
+		 * @param _satType is there for compatibility
+		 *
+		 * @return The parsed GSA Message
+		 */
 		fun handle(_buffer: CharBuffer, _satType: SatType): GSA {
 			val data = arrayOfNulls<CharBuffer>(18)
 

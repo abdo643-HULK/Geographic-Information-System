@@ -21,19 +21,14 @@ class GISApplication : Application() {
 		fun main(_args: Array<String>) = launch(GISApplication::class.java)
 
 		/**
-		 * The ID of the Canvas for lookup
-		 */
-		const val CANVAS_ID = "my-canvas"
-		const val OVERLAY_ID = "my-canvas-overlay"
-
-		/**
 		 * Initial size of the Scene
 		 */
 		const val SCENE_HEIGHT = 520.0
-
-		//		const val SCENE_WIDTH = 720.0
 		const val SCENE_WIDTH = 860.0
 
+		/**
+		 * The default font family for the App
+		 */
 		const val DEFAULT_FONT_FAMILY = "Iosevka Nerd Font"
 	}
 
@@ -42,7 +37,10 @@ class GISApplication : Application() {
 	 */
 	private lateinit var mRoot: GNSSView
 
-	private inline fun loadFonts() {
+	/**
+	 * Loads all fonts needed for the App
+	 */
+	private fun loadFonts() {
 		arrayOf("Iosevka_Nerd_Font_Complete", "Iosevka_Bold_Nerd_Font_Complete").forEach {
 			javaClass
 				.getResource("/fonts/$it.ttf")
@@ -51,7 +49,7 @@ class GISApplication : Application() {
 	}
 
 	/**
-	 * initializes the MVC Objects
+	 * Loads the fonts, initializes the View and starts the parser
 	 */
 	override fun init() {
 		loadFonts()
@@ -64,13 +62,18 @@ class GISApplication : Application() {
 	}
 
 	/**
-	 * sets the scene and title and shows it
+	 * Sets title and the scene and shows it
 	 */
 	override fun start(_stage: Stage) {
 		val main = Scene(mRoot, SCENE_WIDTH, SCENE_HEIGHT)
-		_stage.title = "GIS"
+		_stage.title = "GNSS"
 		_stage.scene = main
 		_stage.show()
+	}
+
+	override fun stop() {
+		super.stop()
+		mRoot.close()
 	}
 }
 

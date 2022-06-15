@@ -49,7 +49,7 @@ class OSMDrawingContext : ADrawingContext(Hashtable(CAPACITY)) {
 			put(Highway.PRIMARY.mValue, PresentationSchema(Color.LIGHT_GRAY, Color(149, 69, 53), 3f))
 
 			put(Landuse.RESIDENTIAL.mValue, PresentationSchema(Color.LIGHT_GRAY, Color.BLACK))
-			put(Landuse.INDUSTRIAL.mValue, PresentationSchema(Color(149, 69, 53), Color.BLACK))
+			put(Landuse.INDUSTRIAL.mValue, PresentationSchema(Color(124, 118, 118), Color.BLACK))
 			put(Landuse.COMMERCIAL.mValue, PresentationSchema(Color.CYAN, Color.BLACK))
 			put(Landuse.FOREST.mValue, PresentationSchema(Color(1, 68, 33), Color.BLACK))
 			put(Landuse.GRASS.mValue, PresentationSchema(Color(124, 252, 0), Color.BLACK))
@@ -58,6 +58,13 @@ class OSMDrawingContext : ADrawingContext(Hashtable(CAPACITY)) {
 			put(Natural.GRASSLAND.mValue, PresentationSchema(Color.GREEN, Color.BLACK))
 			put(Natural.WOOD.mValue, PresentationSchema(Color(0, 100, 0), Color.BLACK))
 			put(Natural.WATER.mValue, PresentationSchema(Color.BLUE, Color.BLACK))
+
+			put(1, PresentationSchema(Color(62, 105, 190), Color.BLACK))
+
+			val waterwayStart = 2001
+			for (i in waterwayStart..2007) {
+				put(i, PresentationSchema(Color(62, 105, i - waterwayStart + 190), Color.BLACK))
+			}
 
 			for (i in 9000..9028) {
 				put(i, PresentationSchema(Color(255, 200, i - 8980), Color.BLACK))

@@ -102,7 +102,9 @@ class OSMServer : Server {
 				val poly = org.postgis.Polygon(wkt)
 				if (poly.numRings() < 1) return emptyList()
 				val polys = convertPolygon(poly)
-				val holes = polys.drop(1).map { Area(it) }
+				val holes = polys
+					.drop(1)
+					.map { Area(it) }
 				listOf(Area(polys[0], holes))
 			}
 			Geometry.MULTIPOLYGON -> {
@@ -111,7 +113,9 @@ class OSMServer : Server {
 					if (it.numRings() < 1) return@mapNotNull null
 					val converted = convertPolygon(it)
 					val poly = converted[0]
-					val holes = converted.drop(1).map { hole -> Area(hole) }
+					val holes = converted
+						.drop(1)
+						.map { hole -> Area(hole) }
 					Area(poly, holes)
 				}
 			}
@@ -147,7 +151,19 @@ class OSMServer : Server {
 				/* Create a statement and execute a select query. */
 				val stmt = (this as Connection).createStatement()
 
-				data += arrayOf(NATURAL_QUERY, LANDUSE_QUERY, HIGHWAY_QUERRY, BUILDING_QUERY)
+				@Language("SQL")
+				val waterways = "SELECT * FROM osm_waterway"
+
+				@Language("SQL")
+				val places = "SELECT * FROM osm_place"
+				data += arrayOf(
+					NATURAL_QUERY,
+					waterways,
+					LANDUSE_QUERY,
+					HIGHWAY_QUERRY,
+					places,
+					BUILDING_QUERY
+				)
 					.map { query -> getObjects(stmt, query) }
 
 				stmt.close()

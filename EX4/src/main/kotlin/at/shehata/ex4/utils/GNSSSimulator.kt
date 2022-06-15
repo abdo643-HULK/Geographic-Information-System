@@ -3,6 +3,9 @@ package at.shehata.ex4.utils
 import java.io.BufferedReader
 import java.io.FileReader
 
+/**
+ * Class simulates a GNSS Receiver
+ */
 class GNSSSimulator(
     /**
      * Dateinamen der Datei, die die GNSS-NMEA-Informationen enthält

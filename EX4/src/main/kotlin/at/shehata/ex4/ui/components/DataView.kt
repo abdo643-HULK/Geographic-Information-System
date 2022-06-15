@@ -12,8 +12,16 @@ import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
 import javafx.scene.text.Text
 
+/**
+ * View that shows the clients Latitude, Longitude,
+ * Altitude, PDOP, HDOP and VDOP
+ */
 class DataView : HBox(), PositionUpdateListener {
 
+	/**
+	 * Text objects for the information needed
+	 * to be displayed
+	 */
 	private val mTexts by lazy {
 		arrayOf(
 			"Latitude" to 6,
@@ -38,6 +46,9 @@ class DataView : HBox(), PositionUpdateListener {
 		}
 	}
 
+	/**
+	 * Sets the background and other styling options
+	 */
 	init {
 		background = Background.fill(Color.rgb(31, 178, 170))
 		padding = Insets(10.0)
@@ -52,6 +63,9 @@ class DataView : HBox(), PositionUpdateListener {
 		}
 	}
 
+	/**
+	 * updates the view with the received information
+	 */
 	override fun update(_info: NMEAInfo) {
 		mTexts[0][1].text = "%.6f".format(_info.mLatitude ?: 0f)
 		mTexts[1][1].text = "%.6f".format(_info.mLongitude ?: 0f)

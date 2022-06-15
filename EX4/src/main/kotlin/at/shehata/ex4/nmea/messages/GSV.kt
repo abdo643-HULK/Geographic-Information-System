@@ -5,7 +5,14 @@ import at.shehata.ex4.nmea.interfaces.Message
 import at.shehata.ex4.nmea.satellites.*
 import java.nio.CharBuffer
 
-
+/**
+ * Object that parses and holds the data of a GSV message
+ *
+ * @param mTotalMsgs Total number of GSV messages (GSV block)
+ * @param mMsgNr the current message
+ * @param mTotalSats Total number of Satellites in a GSV block
+ * @param mSats List of the infos of each Satellite
+ */
 data class GSV(
 	val mTotalMsgs: UInt?,
 	val mMsgNr: UInt?,
@@ -13,6 +20,15 @@ data class GSV(
 	val mSats: List<SatelliteInfo>
 ) : Message {
 	companion object {
+		/**
+		 * Takes a GSV sentence and returns a GSV Object
+		 *
+		 * @param _buffer the sentence to parse
+		 * @param _satType the current GNSS Satellite (ex. GPS or Galileo) for the
+		 * Satellite List
+		 *
+		 * @return The parsed GSV Message
+		 */
 		fun handle(_buffer: CharBuffer, _satType: SatType): GSV {
 			val data = arrayOfNulls<CharBuffer>(20)
 

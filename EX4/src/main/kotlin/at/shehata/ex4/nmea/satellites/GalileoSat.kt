@@ -3,6 +3,10 @@ package at.shehata.ex4.nmea.satellites
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 
+/**
+ * Class that represents a Galileo Satellite
+ * and changes the draw function and fillColor
+ */
 data class GalileoSat(
 	override val mId: Int,
 	override val mElevation: Double,
